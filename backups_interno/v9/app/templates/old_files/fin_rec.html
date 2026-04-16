@@ -1,0 +1,26 @@
+<div class="axiom-card animate-fade">
+    <div class="card-header">
+        <span class="icon">💰</span>
+        <h3>Faturamento Recebido</h3>
+    </div>
+    <div class="card-body">
+        <h2 id="fin-total">R$ 0,00</h2>
+        <p id="fin-qtd">0 títulos processados</p>
+    </div>
+    <div class="card-footer">
+        <span class="trend up">↑ 12% vs mês anterior</span>
+    </div>
+</div>
+
+<script>
+async function loadFinData() {
+    const res = await fetch('/api/financeiro/resumo');
+    const json = await res.json();
+    if(json.status === 'success') {
+        document.getElementById('fin-total').innerText = 
+            new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(json.data.total_recebido);
+        document.getElementById('fin-qtd').innerText = `${json.data.qtd_titulos} títulos processados`;
+    }
+}
+loadFinData();
+</script>

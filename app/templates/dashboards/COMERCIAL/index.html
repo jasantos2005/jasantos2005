@@ -1,0 +1,554 @@
+{% extends "base/layout.html" %}
+{% block page_title %}<i class="fas fa-chart-line" style="color:var(--warn);margin-right:8px;font-size:14px"></i>Performance Comercial{% endblock %}
+
+{% block content %}
+<style>
+    .period-tabs { display:flex; gap:6px; }
+    .tab-btn {
+        padding:6px 14px; border-radius:6px; border:1px solid var(--border);
+        background:transparent; color:var(--muted); font-size:12px; font-weight:600;
+        cursor:pointer; transition:all .18s; letter-spacing:.4px;
+    }
+    .tab-btn:hover { border-color:var(--warn); color:var(--warn); }
+    .tab-btn.active { background:var(--warn); border-color:var(--warn); color:#fff; }
+
+    .kpi-grid {
+        display:grid;
+        grid-template-columns:repeat(6, minmax(0,1fr));
+        gap:14px;
+        margin-bottom:22px;
+    }
+    .kpi-card {
+        background:var(--card); border:1px solid var(--border); border-radius:12px;
+        padding:16px 14px 12px; position:relative; overflow:hidden; min-width:0;
+        border-top:3px solid transparent;
+    }
+    .kpi-card.green  { border-top-color:var(--green); }
+    .kpi-card.red    { border-top-color:var(--danger); }
+    .kpi-card.blue   { border-top-color:var(--info); }
+    .kpi-card.warn   { border-top-color:var(--warn); }
+    .kpi-card.accent { border-top-color:#6366f1; }
+    .kpi-card.muted  { border-top-color:var(--muted); }
+    .kpi-icon {
+        width:34px; height:34px; border-radius:8px; display:flex;
+        align-items:center; justify-content:center; font-size:14px;
+        margin-bottom:10px; background:rgba(0,200,160,.1); color:var(--green);
+    }
+    .kpi-icon.red    { background:rgba(240,82,82,.1);  color:var(--danger); }
+    .kpi-icon.blue   { background:rgba(96,165,250,.1); color:var(--info);   }
+    .kpi-icon.warn   { background:rgba(245,158,11,.1); color:var(--warn);   }
+    .kpi-icon.accent { background:rgba(99,102,241,.1); color:#6366f1; }
+    .kpi-icon.muted  { background:rgba(107,114,128,.1);color:var(--muted);  }
+    .kpi-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); margin-bottom:4px; }
+    .kpi-value { font-family:'Syne',sans-serif; font-size:22px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kpi-value.green  { color:var(--green);  }
+    .kpi-value.red    { color:var(--danger); }
+    .kpi-value.blue   { color:var(--info);   }
+    .kpi-value.warn   { color:var(--warn);   }
+    .kpi-value.accent { color:#6366f1; }
+    .kpi-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+
+    .rank-table { width:100%; border-collapse:collapse; }
+    .rank-table th {
+        font-size:10px; text-transform:uppercase; letter-spacing:.7px;
+        color:var(--muted); font-weight:600; padding:10px 14px;
+        border-bottom:1px solid var(--border); text-align:left;
+    }
+    .rank-table td { padding:12px 14px; font-size:13px; color:var(--text); border-bottom:1px solid var(--border); }
+    .rank-table tr:last-child td { border-bottom:none; }
+    .rank-table tbody tr { cursor:pointer; transition:background .15s; }
+    .rank-table tbody tr:hover td { background:rgba(245,158,11,.07); }
+    .score-wrap { display:flex; align-items:center; gap:8px; }
+    .score-bar-bg { flex:1; height:6px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden; }
+    .score-bar-fill { height:100%; border-radius:3px; transition:width .4s; }
+    .score-num { font-size:12px; font-weight:700; min-width:28px; text-align:right; }
+
+    .charts-grid { display:grid; grid-template-columns:1fr 320px; gap:16px; margin-top:16px; }
+    .sec-title { font-size:13px; font-weight:700; color:var(--text); }
+    .sec-sub   { font-size:11px; color:var(--muted); margin-top:2px; }
+
+    .drawer-overlay {
+        display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+        z-index:900; backdrop-filter:blur(2px);
+    }
+    .drawer-overlay.open { display:block; }
+    .drawer {
+        position:fixed; top:0; right:-560px; width:540px; height:100vh;
+        background:var(--card); border-left:1px solid var(--border);
+        z-index:901; overflow-y:auto; transition:right .28s cubic-bezier(.4,0,.2,1);
+        display:flex; flex-direction:column;
+    }
+    .drawer.open { right:0; }
+    .drawer-header {
+        padding:20px 22px 16px; border-bottom:1px solid var(--border);
+        display:flex; align-items:center; justify-content:space-between;
+        position:sticky; top:0; background:var(--card); z-index:1;
+    }
+    .drawer-avatar {
+        width:48px; height:48px; border-radius:50%; background:var(--warn);
+        display:flex; align-items:center; justify-content:center;
+        font-size:18px; font-weight:800; color:#fff; font-family:'Syne',sans-serif;
+        flex-shrink:0;
+    }
+    .drawer-close {
+        width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+        background:transparent; color:var(--muted); cursor:pointer; font-size:14px;
+        display:flex; align-items:center; justify-content:center;
+    }
+    .drawer-close:hover { color:var(--text); border-color:var(--text); }
+    .drawer-body { padding:20px 22px; flex:1; }
+    .drawer-kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+    .drawer-kpi { background:var(--dark); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+    .drawer-kpi .lbl { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:4px; }
+    .drawer-kpi .val { font-family:'Syne',sans-serif; font-size:20px; font-weight:700; color:var(--text); }
+    .drawer-section-title { font-size:11px; text-transform:uppercase; letter-spacing:.7px; font-weight:700; color:var(--muted); margin:18px 0 10px; }
+    .drawer-recentes { width:100%; border-collapse:collapse; }
+    .drawer-recentes th { font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; }
+    .drawer-recentes td { font-size:12px; color:var(--text); padding:9px 8px; border-bottom:1px solid var(--border); }
+    .drawer-recentes tr:last-child td { border-bottom:none; }
+    .status-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; }
+    .status-A { background:rgba(0,200,160,.15); color:var(--green); }
+    .status-I { background:rgba(240,82,82,.12); color:var(--danger); }
+    .status-C { background:rgba(107,114,128,.15); color:var(--muted); }
+
+    @media (max-width:1100px) { .kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:700px) {
+        .kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .charts-grid { grid-template-columns:1fr; }
+        .drawer { width:100%; right:-100%; }
+    }
+</style>
+
+<!-- HEADER -->
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+    <div>
+        <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;">Performance Comercial</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Ranking de vendedores, ativações por bairro e perfis individuais</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="period-tabs">
+            <button class="tab-btn active" onclick="setPeriodo('mes',this)">Mês</button>
+            <button class="tab-btn" onclick="setPeriodo('trimestre',this)">Trimestre</button>
+            <button class="tab-btn" onclick="setPeriodo('semestre',this)">Semestre</button>
+            <button class="tab-btn" onclick="setPeriodo('ano',this)">Ano</button>
+        </div>
+        <div class="date-filter">
+            <i class="fas fa-calendar-alt" style="color:var(--muted);font-size:12px;"></i>
+            <input type="date" id="date-start">
+            <span class="date-sep">até</span>
+            <input type="date" id="date-end">
+            <button class="btn-refresh" onclick="loadResumo()" title="Atualizar por datas">
+                <i class="fas fa-sync-alt" id="icon-refresh"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+    <div class="kpi-card green">
+        <div class="kpi-icon"><i class="fas fa-plug"></i></div>
+        <div class="kpi-label">Ativações</div>
+        <div class="kpi-value green" id="kpi-atv">—</div>
+        <div class="kpi-sub">no período</div>
+    </div>
+    <div class="kpi-card red">
+        <div class="kpi-icon red"><i class="fas fa-times-circle"></i></div>
+        <div class="kpi-label">Cancelamentos</div>
+        <div class="kpi-value red" id="kpi-canc">—</div>
+        <div class="kpi-sub">no período</div>
+    </div>
+    <div class="kpi-card blue">
+        <div class="kpi-icon blue"><i class="fas fa-balance-scale"></i></div>
+        <div class="kpi-label">Crescimento Líquido</div>
+        <div class="kpi-value blue" id="kpi-liq">—</div>
+        <div class="kpi-sub">ativações − cancelamentos</div>
+    </div>
+    <div class="kpi-card warn">
+        <div class="kpi-icon warn"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="kpi-label">Churn Rate</div>
+        <div class="kpi-value warn" id="kpi-churn">—</div>
+        <div class="kpi-sub">sobre base ativa</div>
+    </div>
+    <div class="kpi-card accent">
+        <div class="kpi-icon accent"><i class="fas fa-tag"></i></div>
+        <div class="kpi-label">Ticket Médio</div>
+        <div class="kpi-value accent" id="kpi-ticket">—</div>
+        <div class="kpi-sub">média das ativações</div>
+    </div>
+    <div class="kpi-card muted">
+        <div class="kpi-icon muted"><i class="fas fa-users"></i></div>
+        <div class="kpi-label">Base Ativa</div>
+        <div class="kpi-value" id="kpi-base">—</div>
+        <div class="kpi-sub">contratos ativos total</div>
+    </div>
+</div>
+
+<!-- RANKING -->
+<div class="card" style="margin-bottom:16px;">
+    <div style="padding:16px 18px 0; display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div>
+            <div class="sec-title"><i class="fas fa-trophy" style="color:var(--warn);margin-right:7px;"></i>Ranking de Vendedores</div>
+            <div class="sec-sub" id="rank-periodo-label">Clique em um vendedor para ver o perfil completo</div>
+        </div>
+    </div>
+    <div style="padding:8px 0 4px; overflow-x:auto;">
+        <table class="rank-table">
+            <thead>
+                <tr>
+                    <th style="width:44px;">#</th>
+                    <th>Vendedor</th>
+                    <th style="text-align:right;">Ativações</th>
+                    <th style="text-align:right;">Cancelamentos</th>
+                    <th style="text-align:right;">Crescimento</th>
+                    <th style="text-align:right;">Ticket Médio</th>
+                    <th style="text-align:right;">Receita Total</th>
+                    <th style="width:180px;">Score</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-rank">
+                <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted);">Carregando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- CHARTS ROW 1 -->
+<div class="charts-grid">
+    <div class="card">
+        <div style="padding:16px 18px 0;">
+            <div class="sec-title"><i class="fas fa-chart-bar" style="color:var(--info);margin-right:7px;"></i>Evolução de Ativações</div>
+            <div class="sec-sub">Últimos 6 meses — ativações vs cancelamentos</div>
+        </div>
+        <div style="padding:16px; height:240px;"><canvas id="chart-evolucao"></canvas></div>
+    </div>
+    <div class="card">
+        <div style="padding:16px 18px 0;">
+            <div class="sec-title"><i class="fas fa-door-open" style="color:var(--danger);margin-right:7px;"></i>Motivos de Evasão</div>
+            <div class="sec-sub" id="motivos-periodo-label">Período atual</div>
+        </div>
+        <div style="padding:16px; height:240px; display:flex; align-items:center; justify-content:center;"><canvas id="chart-motivos"></canvas></div>
+    </div>
+</div>
+
+<!-- CHARTS ROW 2 -->
+<div style="display:grid; grid-template-columns:340px 1fr; gap:16px; margin-top:16px;">
+    <div class="card">
+        <div style="padding:16px 18px 0;">
+            <div class="sec-title"><i class="fas fa-map-marker-alt" style="color:var(--green);margin-right:7px;"></i>Ativações por Bairro</div>
+            <div class="sec-sub" id="bairro-periodo-label">Top bairros do período</div>
+        </div>
+        <div style="padding:16px; height:300px;"><canvas id="chart-bairros"></canvas></div>
+    </div>
+    <div class="card">
+        <div style="padding:16px 18px 0;">
+            <div class="sec-title"><i class="fas fa-chart-area" style="color:#6366f1;margin-right:7px;"></i>Produtividade por Vendedor</div>
+            <div class="sec-sub">Ativações mensais — últimos 6 meses</div>
+        </div>
+        <div style="padding:16px; height:300px;"><canvas id="chart-produt"></canvas></div>
+    </div>
+</div>
+
+<!-- VENDOR DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="vendor-drawer">
+    <div class="drawer-header">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <div class="drawer-avatar" id="drawer-avatar">?</div>
+            <div>
+                <div style="font-weight:700; font-size:15px; color:var(--text);" id="drawer-nome">—</div>
+                <div style="font-size:11px; color:var(--muted);" id="drawer-periodo-label">Período atual</div>
+            </div>
+        </div>
+        <button class="drawer-close" onclick="closeDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <div class="drawer-kpi-grid">
+            <div class="drawer-kpi"><div class="lbl">Ativações</div><div class="val" style="color:var(--green);" id="dkpi-atv">—</div></div>
+            <div class="drawer-kpi"><div class="lbl">Cancelamentos</div><div class="val" style="color:var(--danger);" id="dkpi-canc">—</div></div>
+            <div class="drawer-kpi"><div class="lbl">Crescimento</div><div class="val" id="dkpi-cresc">—</div></div>
+            <div class="drawer-kpi"><div class="lbl">Ticket Médio</div><div class="val" style="color:var(--warn);" id="dkpi-ticket">—</div></div>
+        </div>
+        <div class="drawer-kpi">
+            <div class="lbl">Receita Total no Período</div>
+            <div class="val" style="color:#6366f1;font-size:24px;" id="dkpi-receita">—</div>
+        </div>
+        <div class="drawer-section-title">Evolução Mensal (últimos 6 meses)</div>
+        <div style="height:160px;"><canvas id="drawer-chart-evolucao"></canvas></div>
+        <div class="drawer-section-title">Principais Bairros Atendidos</div>
+        <div style="height:150px;"><canvas id="drawer-chart-bairros"></canvas></div>
+        <div class="drawer-section-title">Últimas Ativações no Período</div>
+        <table class="drawer-recentes">
+            <thead><tr><th>Cliente</th><th>Bairro</th><th>Data</th><th>Valor</th><th>Status</th></tr></thead>
+            <tbody id="drawer-recentes-body"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">—</td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const fmtBRL = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+const fmtN   = v => new Intl.NumberFormat('pt-BR').format(v||0);
+const fmtDt  = s => s ? s.split('-').reverse().join('/') : '—';
+
+let periodoAtual = 'mes';
+let chartEvolucao=null, chartMotivos=null, chartBairros=null, chartProdut=null;
+let drawerChartEv=null, drawerChartBr=null;
+
+const PERIODO_LABELS = { mes:'este mês', trimestre:'últimos 3 meses', semestre:'últimos 6 meses', ano:'este ano' };
+const CHART_COLORS = ['#00c8a0','#60a5fa','#f59e0b','#f05252','#a78bfa','#34d399','#fb923c','#e879f9','#38bdf8','#4ade80'];
+const GRID_COLOR = 'rgba(255,255,255,.05)';
+const TICK_COLOR = '#6b7280';
+
+function setPeriodo(periodo, btn) {
+    periodoAtual = periodo;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    // Atualiza inputs de data conforme o período
+    const now = new Date();
+    const y=now.getFullYear(), mo=String(now.getMonth()+1).padStart(2,'0'), d=String(now.getDate()).padStart(2,'0');
+    const hoje = y+'-'+mo+'-'+d;
+    let inicio;
+    if(periodo==='trimestre') {
+        const dt = new Date(now); dt.setDate(dt.getDate()-90);
+        inicio = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+    } else if(periodo==='semestre') {
+        const dt = new Date(now); dt.setDate(dt.getDate()-180);
+        inicio = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+    } else if(periodo==='ano') {
+        inicio = y+'-01-01';
+    } else {
+        inicio = y+'-'+mo+'-01';
+    }
+    document.getElementById('date-start').value = inicio;
+    document.getElementById('date-end').value   = hoje;
+    loadAll();
+}
+function setLoading(on) {
+    const ic=document.getElementById('icon-refresh');
+    if(on) ic.classList.add('fa-spin'); else ic.classList.remove('fa-spin');
+}
+
+async function loadResumo() {
+    const inicio = document.getElementById('date-start').value;
+    const fim    = document.getElementById('date-end').value;
+    setLoading(true);
+    try {
+        const r  = await fetch(`/dashboard/comercial/api/resumo?inicio=${inicio}&fim=${fim}`);
+        const js = await r.json();
+        if(js.status==='success') {
+            const d=js.data;
+            document.getElementById('kpi-atv').innerText    = fmtN(d.ativacoes);
+            document.getElementById('kpi-canc').innerText   = fmtN(d.cancelamentos);
+            const liq=d.crescimento_liquido, el=document.getElementById('kpi-liq');
+            el.innerText = (liq>0?'+':'')+fmtN(liq);
+            el.style.color = liq>=0 ? 'var(--green)' : 'var(--danger)';
+            document.getElementById('kpi-churn').innerText  = (d.churn_rate||0)+'%';
+            document.getElementById('kpi-ticket').innerText = fmtBRL(d.ticket_medio);
+            document.getElementById('kpi-base').innerText   = fmtN(d.base_ativa);
+        }
+    } catch(e){console.error(e);}
+    setLoading(false);
+}
+
+async function loadRanking() {
+    try {
+        const r  = await fetch(`/dashboard/comercial/api/ranking?periodo=${periodoAtual}`);
+        const js = await r.json();
+        const tbody=document.getElementById('tbody-rank');
+        document.getElementById('rank-periodo-label').innerText =
+            'Clique em um vendedor para ver o perfil completo — '+PERIODO_LABELS[periodoAtual];
+        if(!js.data||js.data.length===0) {
+            tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted);">Sem dados no período</td></tr>';
+            return;
+        }
+        tbody.innerHTML = js.data.map(v=>{
+            const sc=v.score||0;
+            const cor=sc>=70?'var(--green)':sc>=40?'var(--warn)':'var(--danger)';
+            const medal=v.posicao<=3?['🥇','🥈','🥉'][v.posicao-1]
+                :`<span style="color:var(--muted);font-weight:600;">${v.posicao}</span>`;
+            const crescCor=v.crescimento>=0?'var(--green)':'var(--danger)';
+            return `<tr onclick="openVendorDrawer(${v.id},'${v.nome.replace(/'/g,"\\'")}')">
+                <td>${medal}</td>
+                <td style="font-weight:600;">${v.nome}</td>
+                <td style="text-align:right;color:var(--green);font-weight:700;">${fmtN(v.ativacoes)}</td>
+                <td style="text-align:right;color:var(--danger);">${fmtN(v.cancelamentos)}</td>
+                <td style="text-align:right;color:${crescCor};font-weight:600;">${v.crescimento>=0?'+':''}${fmtN(v.crescimento)}</td>
+                <td style="text-align:right;">${fmtBRL(v.ticket_medio)}</td>
+                <td style="text-align:right;font-weight:600;">${fmtBRL(v.receita)}</td>
+                <td><div class="score-wrap">
+                    <div class="score-bar-bg"><div class="score-bar-fill" style="width:${sc}%;background:${cor};"></div></div>
+                    <span class="score-num" style="color:${cor};">${sc}</span>
+                </div></td>
+            </tr>`;
+        }).join('');
+    } catch(e){console.error(e);}
+}
+
+async function loadEvolucao() {
+    try {
+        const r  = await fetch(`/dashboard/comercial/api/evolucao?periodo=${periodoAtual}`);
+        const js = await r.json(); const d=js.data||{};
+        const ctx=document.getElementById('chart-evolucao').getContext('2d');
+        if(chartEvolucao) chartEvolucao.destroy();
+        chartEvolucao=new Chart(ctx,{
+            type:'bar',
+            data:{ labels:d.labels||[], datasets:[
+                {label:'Ativações',data:d.ativacoes||[],backgroundColor:'rgba(0,200,160,.7)',borderRadius:4},
+                {label:'Cancelamentos',data:d.cancelamentos||[],backgroundColor:'rgba(240,82,82,.6)',borderRadius:4}
+            ]},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{labels:{color:TICK_COLOR,font:{size:11}}}},
+                scales:{x:{ticks:{color:TICK_COLOR},grid:{color:GRID_COLOR}},
+                        y:{ticks:{color:TICK_COLOR},grid:{color:GRID_COLOR},beginAtZero:true}}}
+        });
+    } catch(e){console.error(e);}
+}
+
+async function loadMotivos() {
+    try {
+        const r  = await fetch(`/dashboard/comercial/api/motivos?periodo=${periodoAtual}`);
+        const js = await r.json(); const d=js.data||{};
+        document.getElementById('motivos-periodo-label').innerText='Período: '+PERIODO_LABELS[periodoAtual];
+        const ctx=document.getElementById('chart-motivos').getContext('2d');
+        if(chartMotivos) chartMotivos.destroy();
+        if(!d.labels||d.labels.length===0) return;
+        chartMotivos=new Chart(ctx,{
+            type:'doughnut',
+            data:{labels:d.labels,datasets:[{data:d.valores,
+                backgroundColor:['#f05252','#f59e0b','#60a5fa','#00c8a0','#a78bfa','#fb923c'],
+                hoverOffset:8,borderWidth:2,borderColor:'var(--card)'}]},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{position:'bottom',labels:{color:TICK_COLOR,font:{size:11},padding:10,boxWidth:12}}}}
+        });
+    } catch(e){console.error(e);}
+}
+
+async function loadBairros() {
+    try {
+        const r  = await fetch(`/dashboard/comercial/api/bairros?periodo=${periodoAtual}`);
+        const js = await r.json(); const d=js.data||{};
+        document.getElementById('bairro-periodo-label').innerText='Top bairros — '+PERIODO_LABELS[periodoAtual];
+        const ctx=document.getElementById('chart-bairros').getContext('2d');
+        if(chartBairros) chartBairros.destroy();
+        chartBairros=new Chart(ctx,{
+            type:'bar',
+            data:{ labels:d.labels||[], datasets:[{label:'Ativações',data:d.valores||[],backgroundColor:CHART_COLORS.map(c=>c+'cc'),borderRadius:4}]},
+            options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{display:false}},
+                scales:{x:{ticks:{color:TICK_COLOR,font:{size:10}},grid:{color:GRID_COLOR},beginAtZero:true},
+                        y:{ticks:{color:TICK_COLOR,font:{size:11}},grid:{color:'transparent'}}}}
+        });
+    } catch(e){console.error(e);}
+}
+
+async function loadProdutividade() {
+    try {
+        const r  = await fetch(`/dashboard/comercial/api/produtividade`);
+        const js = await r.json(); const d=js.data||{};
+        const ctx=document.getElementById('chart-produt').getContext('2d');
+        if(chartProdut) chartProdut.destroy();
+        if(!d.vendedores||d.vendedores.length===0) return;
+        chartProdut=new Chart(ctx,{
+            type:'line',
+            data:{ labels:d.meses,
+                datasets:d.vendedores.map((nome,i)=>({
+                    label:nome, data:d.meses.map(m=>(d.dados[nome]||{})[m]||0),
+                    borderColor:CHART_COLORS[i%CHART_COLORS.length],
+                    backgroundColor:CHART_COLORS[i%CHART_COLORS.length]+'22',
+                    tension:.4,pointRadius:4,fill:false
+                }))},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{labels:{color:TICK_COLOR,font:{size:11},padding:12,boxWidth:12}}},
+                scales:{x:{ticks:{color:TICK_COLOR},grid:{color:GRID_COLOR}},
+                        y:{ticks:{color:TICK_COLOR},grid:{color:GRID_COLOR},beginAtZero:true}}}
+        });
+    } catch(e){console.error(e);}
+}
+
+async function openVendorDrawer(id, nome) {
+    document.getElementById('drawer-overlay').classList.add('open');
+    document.getElementById('vendor-drawer').classList.add('open');
+    document.getElementById('drawer-nome').innerText   = nome;
+    document.getElementById('drawer-avatar').innerText = nome.charAt(0).toUpperCase();
+    document.getElementById('drawer-periodo-label').innerText = 'Perfil — '+PERIODO_LABELS[periodoAtual];
+    ['dkpi-atv','dkpi-canc','dkpi-cresc','dkpi-ticket','dkpi-receita'].forEach(i=>{
+        document.getElementById(i).innerText='…';
+    });
+    document.getElementById('drawer-recentes-body').innerHTML =
+        '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">Carregando…</td></tr>';
+    try {
+        const r  = await fetch(`/dashboard/comercial/api/vendedor/${id}?periodo=${periodoAtual}`);
+        const js = await r.json();
+        if(js.status!=='success') return;
+        const d=js.data;
+        document.getElementById('dkpi-atv').innerText   = fmtN(d.ativacoes);
+        document.getElementById('dkpi-canc').innerText  = fmtN(d.cancelamentos);
+        const cresc=d.crescimento, ce=document.getElementById('dkpi-cresc');
+        ce.innerText = (cresc>=0?'+':'')+fmtN(cresc);
+        ce.style.color = cresc>=0?'var(--green)':'var(--danger)';
+        document.getElementById('dkpi-ticket').innerText  = fmtBRL(d.ticket_medio);
+        document.getElementById('dkpi-receita').innerText = fmtBRL(d.receita);
+        const ectx=document.getElementById('drawer-chart-evolucao').getContext('2d');
+        if(drawerChartEv) drawerChartEv.destroy();
+        drawerChartEv=new Chart(ectx,{type:'bar',
+            data:{labels:d.evolucao.labels,datasets:[{label:'Ativações',data:d.evolucao.ativacoes,backgroundColor:'rgba(0,200,160,.7)',borderRadius:3}]},
+            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+                scales:{x:{ticks:{color:TICK_COLOR,font:{size:10}},grid:{color:GRID_COLOR}},
+                        y:{ticks:{color:TICK_COLOR,font:{size:10}},grid:{color:GRID_COLOR},beginAtZero:true}}}
+        });
+        const bctx=document.getElementById('drawer-chart-bairros').getContext('2d');
+        if(drawerChartBr) drawerChartBr.destroy();
+        if(d.bairros.labels.length>0) {
+            drawerChartBr=new Chart(bctx,{type:'bar',
+                data:{labels:d.bairros.labels,datasets:[{label:'Ativações',data:d.bairros.valores,backgroundColor:CHART_COLORS.map(c=>c+'bb'),borderRadius:3}]},
+                options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+                    scales:{x:{ticks:{color:TICK_COLOR,font:{size:10}},grid:{color:GRID_COLOR},beginAtZero:true},
+                            y:{ticks:{color:TICK_COLOR,font:{size:10}},grid:{color:'transparent'}}}}
+            });
+        }
+        if(d.recentes.length===0) {
+            document.getElementById('drawer-recentes-body').innerHTML=
+                '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">Sem ativações no período</td></tr>';
+        } else {
+            document.getElementById('drawer-recentes-body').innerHTML = d.recentes.map(r=>{
+                const stClass=`status-${r.status}`;
+                const stLabel=r.status==='A'?'Ativo':r.status==='I'?'Inativo':'Cancelado';
+                return `<tr>
+                    <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.cliente}</td>
+                    <td style="color:var(--muted);">${r.bairro}</td>
+                    <td style="white-space:nowrap;">${fmtDt(r.data_ativacao)}</td>
+                    <td>${fmtBRL(r.valor)}</td>
+                    <td><span class="status-badge ${stClass}">${stLabel}</span></td>
+                </tr>`;
+            }).join('');
+        }
+    } catch(e){console.error(e);}
+}
+
+function closeDrawer() {
+    document.getElementById('drawer-overlay').classList.remove('open');
+    document.getElementById('vendor-drawer').classList.remove('open');
+}
+
+function loadAll() {
+    loadResumo();
+    loadRanking();
+    loadEvolucao();
+    loadMotivos();
+    loadBairros();
+    loadProdutividade();
+}
+
+// Init — aguarda DOM completo
+window.addEventListener('load', function() {
+    const now = new Date();
+    const y  = now.getFullYear();
+    const mo = String(now.getMonth()+1).padStart(2,'0');
+    const d  = String(now.getDate()).padStart(2,'0');
+    document.getElementById('date-start').value = y+'-'+mo+'-01';
+    document.getElementById('date-end').value   = y+'-'+mo+'-'+d;
+    loadAll();
+});
+</script>
+{% endblock %}

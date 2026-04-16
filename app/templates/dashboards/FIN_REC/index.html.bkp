@@ -1,0 +1,287 @@
+{% extends "base/layout.html" %}
+{% block content %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800 font-weight-bold"><i class="fas fa-hand-holding-usd mr-2"></i>Contas a Receber</h1>
+
+    <div class="bg-white p-2 rounded-pill shadow-sm border d-flex align-items-center px-3">
+        <i class="fas fa-calendar-alt text-gray-400 mr-2"></i>
+        <input type="date" id="date-start" class="border-0 small text-gray-600 mr-2" style="outline: none;">
+        <span class="text-gray-400 mr-2">até</span>
+        <input type="date" id="date-end" class="border-0 small text-gray-600 mr-2" style="outline: none;">
+        <button onclick="updateUI()" class="btn btn-primary btn-sm rounded-pill px-3">
+            <i class="fas fa-sync-alt fa-sm"></i>
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-0 border-left-success shadow-sm rounded-xl card-modern">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Pagamento no Prazo</div>
+                        <div id="prazo-perc" class="h3 mb-0 font-weight-bold text-gray-800">0%</div>
+                        <div id="prazo-val" class="text-xs text-gray-500 mt-1">R$ 0,00</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-check-circle fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-0 border-left-danger shadow-sm rounded-xl card-modern">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Inadimplência Mês</div>
+                        <div id="inad-mes-perc" class="h3 mb-0 font-weight-bold text-danger">0%</div>
+                        <div id="inad-mes-val" class="text-xs text-gray-500 mt-1">R$ 0,00</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-user-clock fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-12">
+        <div class="card shadow-sm border-0 bg-dark text-white rounded-xl">
+            <div class="card-body py-3">
+                <div class="row align-items-center text-center">
+                    <div class="col-md-4 border-right border-secondary">
+                        <div class="text-xs font-weight-bold text-success text-uppercase">Entradas (Mês)</div>
+                        <div id="fluxo-ent" class="h5 mb-0 font-weight-bold">R$ 0,00</div>
+                    </div>
+                    <div class="col-md-4 border-right border-secondary">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase">Saídas (Mês)</div>
+                        <div id="fluxo-sai" class="h5 mb-0 font-weight-bold">R$ 0,00</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-xs font-weight-bold text-info text-uppercase">Saldo Líquido</div>
+                        <div id="fluxo-res" class="h5 mb-0 font-weight-bold text-white">R$ 0,00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-12 col-lg-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary text-uppercase small">Performance de Faturamento vs Eficiência de Recebimento</h6>
+                <span class="badge badge-primary rounded-pill">Anual</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-area" style="height: 350px;"><canvas id="chartPerformance"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-7 col-lg-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary small text-uppercase">Evolução Histórica (Recebido vs Inadimplente)</h6></div>
+            <div class="card-body">
+                <div class="chart-area" style="height: 250px;"><canvas id="chartEvolucao"></canvas></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5 col-lg-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary small text-uppercase">Aging (Atraso)</h6></div>
+            <div class="card-body">
+                <div class="chart-area" style="height: 250px;"><canvas id="chartAging"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-danger small text-uppercase">Top 10 Maiores Devedores (Vencidos)</h6></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="border-0 px-3 py-2 small">Cliente</th>
+                                <th class="border-0 py-2 small text-center">Títulos</th>
+                                <th class="border-0 px-3 py-2 small text-right">Total Devido</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-devedores" class="small"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+    let chartEvol = null; let chartAging = null; let chartPerf = null;
+
+    async function updateUI() {
+        const start = document.getElementById('date-start').value;
+        const end = document.getElementById('date-end').value;
+
+        try {
+            const resResumo = await fetch(`/api/financeiro/resumo?inicio=${start}&fim=${end}`);
+            const resultResumo = await resResumo.json();
+            if (resultResumo.status === 'success') {
+                const d = resultResumo.data;
+                document.getElementById('prazo-perc').innerText = `${d.pagamento_prazo.percentual_no_prazo}%`;
+                document.getElementById('prazo-val').innerText = fmt(d.pagamento_prazo.total_pago_no_prazo);
+                document.getElementById('inad-mes-perc').innerText = `${d.inadimplencia_mes.percentual_inadimplencia}%`;
+                document.getElementById('inad-mes-val').innerText = fmt(d.inadimplencia_mes.total_ainda_em_aberto);
+            }
+
+            renderFluxo();
+            renderPerformance();
+            renderEvolucao();
+            renderAging();
+            renderDevedores();
+
+        } catch (e) { console.error("Erro geral:", e); }
+    }
+
+    async function renderPerformance() {
+        try {
+            const res = await fetch('/api/financeiro/performance');
+            const result = await res.json();
+            const data = result.data;
+            const ctx = document.getElementById('chartPerformance').getContext('2d');
+            
+            if (chartPerf) chartPerf.destroy();
+            chartPerf = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Recebido (R$)',
+                            data: data.recebido,
+                            backgroundColor: '#1cc88a',
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'Vencido (R$)',
+                            data: data.vencido,
+                            backgroundColor: '#e74a3b',
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'Inadimplência (%)',
+                            type: 'line',
+                            data: data.perc_inad,
+                            borderColor: '#4e73df',
+                            borderWidth: 3,
+                            fill: false,
+                            yAxisID: 'y1',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Valores (R$)' } },
+                        y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Inadimplência (%)' } }
+                    }
+                }
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function renderFluxo() {
+        try {
+            const res = await fetch('/api/financeiro/fluxo-caixa');
+            const result = await res.json();
+            const d = result.data;
+            document.getElementById('fluxo-ent').innerText = fmt(d.entradas);
+            document.getElementById('fluxo-sai').innerText = fmt(d.saidas);
+            const resEl = document.getElementById('fluxo-res');
+            resEl.innerText = fmt(d.resultado);
+            resEl.className = d.resultado >= 0 ? 'h5 mb-0 font-weight-bold text-success' : 'h5 mb-0 font-weight-bold text-danger';
+        } catch (e) { console.error(e); }
+    }
+
+    async function renderEvolucao() {
+        try {
+            const res = await fetch('/api/financeiro/evolucao');
+            const result = await res.json();
+            const data = result.data;
+            const ctx = document.getElementById('chartEvolucao').getContext('2d');
+            if (chartEvol) chartEvol.destroy();
+            chartEvol = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: 'Recebido', data: data.recebido, borderColor: '#1cc88a', backgroundColor: 'rgba(28, 200, 138, 0.1)', fill: true, tension: 0.3 },
+                        { label: 'Inadimplente', data: data.inadimplente, borderColor: '#e74a3b', backgroundColor: 'rgba(231, 74, 59, 0.1)', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function renderAging() {
+        try {
+            const res = await fetch('/api/financeiro/aging');
+            const result = await res.json();
+            const data = result.data;
+            const ctx = document.getElementById('chartAging').getContext('2d');
+            if (chartAging) chartAging.destroy();
+            chartAging = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Valor em Aberto',
+                        data: data.valores,
+                        backgroundColor: ['#4e73df', '#f6c23e', '#e74a3b', '#5a5c69'],
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function renderDevedores() {
+        try {
+            const res = await fetch('/api/financeiro/devedores');
+            const result = await res.json();
+            const devedores = result.data;
+            const tbody = document.getElementById('table-devedores');
+            tbody.innerHTML = '';
+            devedores.forEach(dev => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-3 py-2 font-weight-bold text-gray-700">${dev.cliente}</td>
+                    <td class="py-2 text-center text-gray-500">${dev.qtd_titulos}</td>
+                    <td class="px-3 py-2 text-right text-danger font-weight-bold">${fmt(dev.total_devido)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    window.onload = () => {
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('date-end').value = hoje;
+        updateUI();
+    };
+</script>
+{% endblock %}

@@ -1,0 +1,110 @@
+nohup: ignoring input
+INFO:     Started server process [226564]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /auth/logout HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /auth/logout HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     66.249.85.9:0 - "GET /?error=1 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     74.125.210.39:0 - "GET /?error=1 HTTP/1.0" 200 OK
+INFO:     74.125.210.38:0 - "GET /?error=1 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /auth/logout HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /auth/logout HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /auth/logout HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /portal HTTP/1.0" 404 Not Found
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /portal HTTP/1.0" 404 Not Found
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /portal HTTP/1.0" 404 Not Found
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /auth/logout HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /auth/logout HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /dashboard/home HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /api/financeiro/resumo?inicio=2026-02-01&fim=2026-02-19 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET /auth/logout HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+INFO:     138.99.28.7:0 - "GET / HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+Erro de Banco: no such column: permissao_dash
+INFO:     138.99.28.7:0 - "POST /auth/login HTTP/1.0" 303 See Other
+INFO:     138.99.28.7:0 - "GET /?error=1 HTTP/1.0" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [226564]

@@ -1,0 +1,194 @@
+{% extends "base/layout.html" %}
+{% block content %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800 font-weight-bold">
+        <i class="fas fa-chart-line mr-2 text-primary"></i>Performance Comercial
+    </h1>
+
+    <div class="bg-white p-2 rounded-pill shadow-sm border d-flex align-items-center px-3">
+        <select id="vendedor_id" class="form-control form-control-sm border-0 bg-transparent mr-2" style="width: 200px; color: #666;" onchange="updateUI()">
+            <option value="">Todos os Vendedores</option>
+        </select>
+        <div class="border-left h-75 mx-2" style="width: 1px;"></div>
+
+        <input type="date" id="data_inicio" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;">
+        <span class="mx-2 text-muted">até</span>
+        <input type="date" id="data_fim" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;">
+        <button onclick="updateUI()" class="btn btn-primary btn-sm rounded-pill px-3 ml-2">
+            <i class="fas fa-sync-alt fa-sm"></i> Atualizar
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 border-left-success shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Novas Ativações (Bruto)</div>
+                <div id="val-ativacoes" class="h4 mb-0 font-weight-bold text-gray-800">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 border-left-danger shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Cancelamentos (Churn)</div>
+                <div id="val-cancelamentos" class="h4 mb-0 font-weight-bold text-gray-800">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 bg-gradient-success shadow-sm rounded-xl text-white">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-uppercase mb-1 opacity-75">Crescimento Líquido</div>
+                <div id="val-liquido" class="h4 mb-0 font-weight-bold">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Churn Rate</div>
+                <div id="val-churn" class="h4 mb-0 font-weight-bold text-gray-800">0,00%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3 bg-white border-0 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Performance por Vendedor (Receita vs Qtd)</h6>
+                <div class="small text-muted" id="ticket-geral">Ticket Médio Geral: R$ 0,00</div>
+            </div>
+            <div class="card-body">
+                <div style="height: 350px;"><canvas id="chartVendedores"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3 bg-white border-0">
+                <h6 class="m-0 font-weight-bold text-danger text-center">Principais Motivos de Evasão</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 350px;"><canvas id="chartMotivos"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+    let chartVend = null;
+    let chartMot = null;
+    let vendedoresLoaded = false; 
+
+    // Datas iniciais
+    const agora = new Date();
+    document.getElementById('data_inicio').value = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
+    document.getElementById('data_fim').value = agora.toISOString().split('T')[0];
+
+    async function updateUI() {
+        const inicio = document.getElementById('data_inicio').value;
+        const fim = document.getElementById('data_fim').value;
+        const vendedorId = document.getElementById('vendedor_id').value;
+
+        try {
+            // A URL agora envia o ID do vendedor selecionado para o seu Router Python
+            let url = `/dashboard/comercial/api/resumo?inicio=${inicio}&fim=${fim}`;
+            if (vendedorId) url += `&vendedor_id=${vendedorId}`;
+
+            const res = await fetch(url);
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                const d = result.data;
+
+                // Preenche o filtro com nomes reais apenas na carga inicial
+                if (!vendedoresLoaded && d.vendedores && d.vendedores.length > 0) {
+                    const select = document.getElementById('vendedor_id');
+                    d.vendedores.forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v.id_vendedor;
+                        opt.textContent = v.nome_vendedor;
+                        select.appendChild(opt);
+                    });
+                    vendedoresLoaded = true;
+                }
+
+                // Atualização dos elementos da tela
+                document.getElementById('val-ativacoes').innerText = d.ativacoes;
+                document.getElementById('val-cancelamentos').innerText = d.cancelamentos;
+                document.getElementById('val-liquido').innerText = d.crescimento_liquido;
+                document.getElementById('val-churn').innerText = d.churn_rate + '%';
+                document.getElementById('ticket-geral').innerText = `Ticket Médio Geral: ${fmtBRL(d.ticket_medio_geral)}`;
+
+                renderCharts(d);
+            }
+        } catch (e) { console.error("Erro Axiom Comercial:", e); }
+    }
+
+    function renderCharts(d) {
+        // Gráfico Vendedores
+        const ctxV = document.getElementById('chartVendedores').getContext('2d');
+        if (chartVend) chartVend.destroy();
+        chartVend = new Chart(ctxV, {
+            type: 'bar',
+            data: {
+                labels: d.vendedores.map(v => v.nome_vendedor),
+                datasets: [{
+                    label: 'Receita Total Vendida',
+                    data: d.vendedores.map(v => v.receita_total_vendida),
+                    backgroundColor: '#4e73df',
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `Receita: ${fmtBRL(ctx.raw)}`,
+                            footer: (items) => {
+                                const i = items[0].dataIndex;
+                                return `Vendas: ${d.vendedores[i].qtd_vendas}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Gráfico Motivos (Donut) - Agora com labels de TEXTO e não IDs
+        const ctxM = document.getElementById('chartMotivos').getContext('2d');
+        if (chartMot) chartMot.destroy();
+        chartMot = new Chart(ctxM, {
+            type: 'doughnut',
+            data: {
+                labels: d.motivos.map(m => m.motivo || 'Outros'),
+                datasets: [{
+                    data: d.motivos.map(m => m.total),
+                    backgroundColor: ['#e74a3b', '#f6c23e', '#4e73df', '#1cc88a', '#36b9cc'],
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+
+    window.onload = updateUI;
+</script>
+{% endblock %}

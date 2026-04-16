@@ -1,0 +1,123 @@
+{% extends "base/layout.html" %}
+{% block content %}
+<style>
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+    .modal-content { background: #1c2128; margin: 10% auto; padding: 30px; border: 1px solid #30363d; border-radius: 12px; width: 400px; color: white; }
+    .input-edit { width: 100%; background: #0d1117; border: 1px solid #30363d; color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; }
+    .btn-save { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .btn-save:hover { background: #2ea043; }
+</style>
+
+<div class="governance-container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="color: white; margin: 0;"><i class="fas fa-shield-alt"></i> Portal de Governança</h2>
+            <p style="color: #8b949e; margin-top: 5px;">Gerenciamento de acessos e monitoramento IATCH.</p>
+        </div>
+        
+        {% if session.user.nivel == 99 %}
+        <button onclick="abrirModalCadastro()" style="background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+            <i class="fas fa-plus"></i> Novo Usuário
+        </button>
+        {% endif %}
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 25px;">
+        <div class="card-admin" style="background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 25px;">
+            <h3 style="color: #58a6ff; margin-top: 0; margin-bottom: 20px;">Usuários no Banco</h3>
+            {% for user in usuarios %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #30363d; background: #161b22; margin-bottom: 8px; border-radius: 6px;">
+                <div>
+                    <b style="color: #e6edf3;">{{ user.nome }}</b> 
+                    <small style="color: #58a6ff; margin-left: 10px;">@{{ user.login }}</small><br>
+                    <small style="color: #8b949e;">Setor: {{ user.setor }} | Nível: {{ 'Master' if user.nivel == 99 else 'Comum' }} | Chave: {{ user.permissao_dash or 'Nenhuma' }}</small>
+                </div>
+                
+                <div style="display: flex; gap: 15px;">
+                    {% if session.user.nivel == 99 %}
+                    <button onclick="abrirModalEdicao('{{ user.id }}', '{{ user.nome }}', '{{ user.setor }}', '{{ user.login }}', '{{ user.nivel }}', '{{ user.permissao_dash }}')" style="background: transparent; border: none; color: #58a6ff; cursor: pointer;">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <a href="/admin/usuarios/deletar/{{ user.id }}" onclick="return confirm('Excluir {{ user.nome }} permanentemente?')" style="color: #f85149; text-decoration: none; font-size: 1.1rem;">
+                        <i class="fas fa-trash-alt"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="card-audit" style="background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 25px;">
+            <h3 style="color: #f0883e; margin-top: 0; margin-bottom: 20px;">Atividade Recente</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for log in logs %}
+                <div style="font-size: 12px; padding: 10px; background: #0d1117; border-left: 4px solid {% if log.tipo == 'danger' %}#f85149{% elif log.tipo == 'warning' %}#f0883e{% else %}#238636{% endif %}; border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <b style="font-size: 10px;">{{ log.user }}</b>
+                        <small style="color: #8b949e;">{{ log.hora }}</small>
+                    </div>
+                    {{ log.acao }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalUsuario" class="modal">
+    <div class="modal-content">
+        <h3 id="modal_titulo" style="margin-top: 0; color: #58a6ff;">Usuário</h3>
+        <form action="/admin/usuarios/salvar" method="POST">
+            <label style="font-size: 12px; color: #8b949e;">Nome Completo</label>
+            <input type="text" id="form_nome" name="nome" class="input-edit" required>
+            
+            <label style="font-size: 12px; color: #8b949e;">Login (ID de acesso)</label>
+            <input type="text" id="form_login" name="login" class="input-edit" required>
+            
+            <label style="font-size: 12px; color: #8b949e;">Senha</label>
+            <input type="password" name="senha" class="input-edit" placeholder="Nova ou atual" required>
+            
+            <label style="font-size: 12px; color: #8b949e;">Setor</label>
+            <input type="text" id="form_setor" name="setor" class="input-edit" placeholder="Ex: FINANCEIRO">
+
+            <label style="font-size: 12px; color: #8b949e;">Permissão Dashboards (Tag de Acesso)</label>
+            <input type="text" id="form_permissao" name="permissao_dash" class="input-edit" placeholder="Ex: FIN">
+
+            <label style="font-size: 12px; color: #8b949e;">Nível de Acesso</label>
+            <select id="form_nivel" name="nivel" class="input-edit">
+                <option value="1">Visualizador (Comum)</option>
+                <option value="99">Administrador (Master)</option>
+            </select>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" onclick="fecharModal()" style="flex: 1; background: #30363d; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">Cancelar</button>
+                <button type="submit" class="btn-save" style="flex: 1;">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModalCadastro() {
+        document.getElementById('modal_titulo').innerText = "Cadastrar Novo Usuário";
+        document.getElementById('form_nome').value = "";
+        document.getElementById('form_login').value = "";
+        document.getElementById('form_setor').value = "";
+        document.getElementById('form_permissao').value = "";
+        document.getElementById('modalUsuario').style.display = 'block';
+    }
+    
+    // Função atualizada para receber a permissão
+    function abrirModalEdicao(id, nome, setor, login, nivel, permissao) {
+        document.getElementById('modal_titulo').innerText = "Editar " + nome;
+        document.getElementById('form_nome').value = nome;
+        document.getElementById('form_login').value = login;
+        document.getElementById('form_setor').value = setor;
+        document.getElementById('form_nivel').value = nivel;
+        document.getElementById('form_permissao').value = permissao;
+        document.getElementById('modalUsuario').style.display = 'block';
+    }
+    
+    function fecharModal() { document.getElementById('modalUsuario').style.display = 'none'; }
+</script>
+{% endblock %}

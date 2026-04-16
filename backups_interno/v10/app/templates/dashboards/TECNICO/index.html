@@ -1,0 +1,171 @@
+{% extends "base/layout.html" %}
+{% block content %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800 font-weight-bold">
+        <i class="fas fa-tools mr-2 text-primary"></i>Gestão Operacional / Técnica
+    </h1>
+
+    <div class="bg-white p-2 rounded-pill shadow-sm border d-flex align-items-center px-3">
+        <input type="date" id="data_inicio" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;">
+        <span class="mx-2 text-muted">até</span>
+        <input type="date" id="data_fim" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;">
+        <button onclick="updateUI()" class="btn btn-primary btn-sm rounded-pill px-3 ml-2">
+            <i class="fas fa-sync-alt fa-sm"></i> Atualizar
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 border-left-primary shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Volume Total OS</div>
+                <div id="val-total" class="h4 mb-0 font-weight-bold text-gray-800">0</div>
+                <small class="text-muted">No período selecionado</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 border-left-info shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">SLA Cumprido (%)</div>
+                <div id="val-sla" class="h4 mb-0 font-weight-bold text-gray-800">0%</div>
+                <div class="progress progress-sm mt-2">
+                    <div id="bar-sla" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 border-left-warning shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Taxa de Reincidência</div>
+                <div id="val-reincidencia" class="h4 mb-0 font-weight-bold text-gray-800">0%</div>
+                <small class="text-muted">Assunto 287 (Retrabalho)</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-0 border-left-success shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Instalações FTTH</div>
+                <div id="val-inst" class="h4 mb-0 font-weight-bold text-gray-800">0</div>
+                <small class="text-muted">Finalizadas (Assunto 311)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3 bg-white border-0">
+                <h6 class="m-0 font-weight-bold text-primary">Produtividade: Serviço (19) vs Suporte (20)</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 350px;"><canvas id="chartProdutividade"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3 bg-white border-0">
+                <h6 class="m-0 font-weight-bold text-primary text-center">Distribuição de Demanda</h6>
+            </div>
+            <div class="card-body">
+                <div style="height: 350px;"><canvas id="chartSetores"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let chartProd = null;
+    let chartSetor = null;
+
+    // Configuração inicial de datas
+    const agora = new Date();
+    document.getElementById('data_inicio').value = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
+    document.getElementById('data_fim').value = agora.toISOString().split('T')[0];
+
+    async function updateUI() {
+        const inicio = document.getElementById('data_inicio').value;
+        const fim = document.getElementById('data_fim').value;
+
+        try {
+            const res = await fetch(`/dashboard/tecnico/api/resumo?inicio=${inicio}&fim=${fim}`);
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                const d = result.data;
+                const r = d.resumo;
+
+                // Atualiza Cards de KPI
+                document.getElementById('val-total').innerText = r.total_os || 0;
+                document.getElementById('val-sla').innerText = (r.sla_percentual || 0) + '%';
+                document.getElementById('bar-sla').style.width = (r.sla_percentual || 0) + '%';
+                document.getElementById('val-reincidencia').innerText = (r.taxa_reincidencia || 0) + '%';
+                document.getElementById('val-inst').innerText = r.instalacoes_feitas || 0;
+
+                renderCharts(d);
+            }
+        } catch (e) { console.error("Erro Dashboard Técnico:", e); }
+    }
+
+    function renderCharts(d) {
+        // Gráfico de Produtividade (Barras Empilhadas)
+        const ctxP = document.getElementById('chartProdutividade').getContext('2d');
+        if (chartProd) chartProd.destroy();
+        chartProd = new Chart(ctxP, {
+            type: 'bar',
+            data: {
+                labels: d.ranking.map(v => v.tecnico),
+                datasets: [
+                    {
+                        label: 'Serviço',
+                        data: d.ranking.map(v => v.total_servicos),
+                        backgroundColor: '#4e73df'
+                    },
+                    {
+                        label: 'Suporte',
+                        data: d.ranking.map(v => v.total_suportes),
+                        backgroundColor: '#1cc88a'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { stacked: true }, y: { stacked: true } },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // Gráfico de Pizza (Setores)
+        const ctxS = document.getElementById('chartSetores').getContext('2d');
+        if (chartSetor) chartSetor.destroy();
+        chartSetor = new Chart(ctxS, {
+            type: 'doughnut',
+            data: {
+                labels: d.setores.map(s => s.setor_nome),
+                datasets: [{
+                    data: d.setores.map(s => s.total),
+                    backgroundColor: ['#4e73df', '#1cc88a']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+
+    window.onload = updateUI;
+</script>
+{% endblock %}

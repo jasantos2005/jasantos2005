@@ -1,0 +1,428 @@
+{% extends "base/layout.html" %}
+{% block page_title %}<i class="fas fa-hand-holding-usd" style="color:var(--green);margin-right:8px;font-size:14px"></i>Contas a Receber{% endblock %}
+
+{% block content %}
+<style>
+    .btn-period {
+        padding: 5px 11px;
+        border-radius: 6px;
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: 'DM Sans', sans-serif;
+    }
+    .btn-period:hover { background: rgba(0,200,160,0.08); color: var(--green); border-color: rgba(0,200,160,0.25); }
+    .btn-period.active { background: rgba(0,200,160,0.12); color: var(--green); border-color: rgba(0,200,160,0.4); }
+</style>
+
+<!-- HEADER + FILTRO -->
+<div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+    <div>
+        <div style="font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--text);">Contas a Receber</div>
+        <div style="font-size:12px; color:var(--muted); margin-top:2px;">Análise de recebimentos e inadimplência</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+        <!-- Atalhos de período -->
+        <div style="display:flex; gap:4px;">
+            <button class="btn-period" id="period-today"    onclick="setPeriod('today',this)">Hoje</button>
+            <button class="btn-period" id="period-7d"       onclick="setPeriod('7d',this)">7 dias</button>
+            <button class="btn-period" id="period-month"    onclick="setPeriod('month',this)">Mês</button>
+            <button class="btn-period" id="period-quarter"  onclick="setPeriod('quarter',this)">Trimestre</button>
+            <button class="btn-period" id="period-year"     onclick="setPeriod('year',this)">Ano</button>
+        </div>
+        <!-- Filtro de data manual -->
+        <div class="date-filter">
+            <i class="fas fa-calendar-alt" style="color:var(--muted); font-size:12px;"></i>
+            <input type="date" id="date-start">
+            <span class="date-sep">até</span>
+            <input type="date" id="date-end">
+            <button class="btn-refresh" onclick="updateUI()" title="Atualizar">
+                <i class="fas fa-sync-alt" id="icon-refresh"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- KPI CARDS com Sparklines -->
+<div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px; margin-bottom:16px;">
+
+    <div class="card" style="border-top:3px solid var(--green); border-left:none;">
+        <div class="card-body" style="padding:14px 16px 10px;">
+            <div class="kpi-label">Pagamento no Prazo</div>
+            <div class="kpi-value kpi-green" id="prazo-perc">—</div>
+            <div style="height:36px; margin:6px 0 4px;"><canvas id="spark-prazo"></canvas></div>
+            <div class="kpi-sub" id="prazo-val">R$ 0,00 recebido</div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--danger); border-left:none;">
+        <div class="card-body" style="padding:14px 16px 10px;">
+            <div class="kpi-label">Inadimplência Mês</div>
+            <div class="kpi-value kpi-red" id="inad-mes-perc">—</div>
+            <div style="height:36px; margin:6px 0 4px;"><canvas id="spark-inad"></canvas></div>
+            <div class="kpi-sub" id="inad-mes-val">R$ 0,00 em aberto</div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--warn); border-left:none;">
+        <div class="card-body" style="padding:14px 16px 10px;">
+            <div class="kpi-label">Inadimplência Ano</div>
+            <div class="kpi-value kpi-warn" id="inad-ano-perc">—</div>
+            <div style="height:36px; margin:6px 0 4px;"><canvas id="spark-inad2"></canvas></div>
+            <div class="kpi-sub" id="inad-ano-val">R$ 0,00 acumulado</div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--info); border-left:none;">
+        <div class="card-body" style="padding:14px 16px 10px;">
+            <div class="kpi-label">ARPU Real / Cliente</div>
+            <div class="kpi-value kpi-info" id="arpu-val">—</div>
+            <div style="height:36px; margin:6px 0 4px;"><canvas id="spark-arpu"></canvas></div>
+            <div class="kpi-sub" id="arpu-clientes">0 clientes pagantes</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- FLUXO CAIXA BANNER -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-body" style="padding:18px 24px;">
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); text-align:center; gap:0;">
+            <div style="border-right:1px solid var(--border); padding-right:20px;">
+                <div style="font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--green); margin-bottom:6px;">Entradas (Período)</div>
+                <div style="font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:var(--text);" id="fluxo-ent">R$ 0,00</div>
+            </div>
+            <div style="border-right:1px solid var(--border); padding:0 20px;">
+                <div style="font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--danger); margin-bottom:6px;">Saídas (Período)</div>
+                <div style="font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:var(--text);" id="fluxo-sai">R$ 0,00</div>
+            </div>
+            <div style="padding-left:20px;">
+                <div style="font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Saldo Líquido</div>
+                <div style="font-family:'Syne',sans-serif; font-size:18px; font-weight:700;" id="fluxo-res">R$ 0,00</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GRÁFICOS ROW -->
+<div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px;">
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Performance de Faturamento vs Eficiência de Recebimento</span>
+            <span class="badge-green" id="badge-periodo">Mês</span>
+        </div>
+        <div class="card-body">
+            <div style="height:300px;"><canvas id="chartPerformance"></canvas></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Aging — Envelhecimento da Dívida</span>
+        </div>
+        <div class="card-body">
+            <div style="height:300px;"><canvas id="chartAging"></canvas></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- EVOLUÇÃO + DEVEDORES -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Evolução Histórica — Recebido vs Inadimplente</span>
+        </div>
+        <div class="card-body">
+            <div style="height:240px;"><canvas id="chartEvolucao"></canvas></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title" style="color:var(--danger);">Top 10 Maiores Devedores</span>
+        </div>
+        <div class="card-body" style="padding:0;">
+            <table class="table-axiom">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th style="text-align:center;">Títulos</th>
+                        <th style="text-align:right; padding-right:18px;">Total Devido</th>
+                    </tr>
+                </thead>
+                <tbody id="table-devedores"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    Chart.defaults.color = '#6b7280';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+    const fmt  = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+    const fmtP = v => `${parseFloat(v||0).toFixed(2)}%`;
+
+    let chartEvol=null, chartAging=null, chartPerf=null;
+    const sparks = {};
+
+    // ── Atalhos de Período ────────────────────────────────────────
+    const PERIOD_LABELS = { today:'Hoje', '7d':'7 dias', month:'Mês', quarter:'Trimestre', year:'Ano' };
+
+    function setPeriod(period, btn) {
+        const hoje = new Date();
+        const iso  = d => d.toISOString().split('T')[0];
+        let inicio;
+        switch(period) {
+            case 'today':   inicio = iso(hoje); break;
+            case '7d':      inicio = iso(new Date(hoje - 7*864e5)); break;
+            case 'month':   inicio = iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)); break;
+            case 'quarter': inicio = iso(new Date(hoje.getFullYear(), Math.floor(hoje.getMonth()/3)*3, 1)); break;
+            case 'year':    inicio = `${hoje.getFullYear()}-01-01`; break;
+        }
+        document.getElementById('date-start').value = inicio;
+        document.getElementById('date-end').value   = iso(hoje);
+        document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        const badge = document.getElementById('badge-periodo');
+        if(badge) badge.innerText = PERIOD_LABELS[period] || 'Período';
+        localStorage.setItem('hub_fin_period', period);
+        updateUI();
+    }
+
+    function restorePeriod() {
+        const saved = localStorage.getItem('hub_fin_period') || 'month';
+        const btn   = document.getElementById(`period-${saved}`);
+        setPeriod(saved, btn);
+    }
+
+    // ── Loading ───────────────────────────────────────────────────
+    function setLoading(on) {
+        document.getElementById('icon-refresh').classList.toggle('fa-spin', on);
+    }
+
+    // ── Update principal ──────────────────────────────────────────
+    async function updateUI() {
+        const start = document.getElementById('date-start').value;
+        const end   = document.getElementById('date-end').value;
+        setLoading(true);
+        try {
+            await Promise.all([
+                loadResumo(start, end),
+                loadFluxo(start, end),
+                loadPerformance(start, end),
+                loadEvolucao(start, end),
+                loadAging(start, end),
+                loadDevedores(start, end),
+            ]);
+        } catch(e){ console.error(e); }
+        setLoading(false);
+    }
+
+    // ── Sparklines ────────────────────────────────────────────────
+    function drawSparkline(id, labels, data, color) {
+        const canvas = document.getElementById(id);
+        if(!canvas) return;
+        if(sparks[id]) sparks[id].destroy();
+        sparks[id] = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    borderColor: color,
+                    borderWidth: 1.5,
+                    fill: true,
+                    backgroundColor: color + '22',
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 600 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: { label: ctx => ` ${ctx.parsed.y}` }
+                    }
+                },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    }
+
+    async function loadSparklines() {
+        try {
+            const res = await fetch('/api/financeiro/sparklines');
+            const r   = await res.json();
+            if(r.status !== 'success') return;
+            const d = r.data;
+            drawSparkline('spark-prazo', d.labels, d.prazo, '#00c8a0');
+            drawSparkline('spark-inad',  d.labels, d.inad,  '#f05252');
+            drawSparkline('spark-inad2', d.labels, d.inad,  '#f59e0b');
+            drawSparkline('spark-arpu',  d.labels, d.arpu,  '#60a5fa');
+        } catch(e){ console.error('Sparklines:', e); }
+    }
+
+    // ── KPIs ──────────────────────────────────────────────────────
+    async function loadResumo(start, end) {
+        const res = await fetch(`/api/financeiro/resumo?inicio=${start}&fim=${end}`);
+        const r = await res.json();
+        if(r.status !== 'success') return;
+        const d = r.data;
+        if(d.pagamento_prazo) {
+            document.getElementById('prazo-perc').innerText = fmtP(d.pagamento_prazo.percentual_no_prazo);
+            document.getElementById('prazo-val').innerText  = fmt(d.pagamento_prazo.total_pago_no_prazo) + ' recebido';
+        }
+        if(d.inadimplencia_mes) {
+            document.getElementById('inad-mes-perc').innerText = fmtP(d.inadimplencia_mes.percentual_inadimplencia);
+            document.getElementById('inad-mes-val').innerText  = fmt(d.inadimplencia_mes.total_ainda_em_aberto) + ' em aberto';
+        }
+        if(d.inadimplencia_ano) {
+            document.getElementById('inad-ano-perc').innerText = fmtP(d.inadimplencia_ano.percentual_inadimplencia_ano);
+            document.getElementById('inad-ano-val').innerText  = fmt(d.inadimplencia_ano.total_em_aberto_no_ano) + ' acumulado';
+        }
+        if(d.arpu_caixa) {
+            document.getElementById('arpu-val').innerText      = fmt(d.arpu_caixa.arpu_real);
+            document.getElementById('arpu-clientes').innerText = `${d.arpu_caixa.clientes_pagantes || 0} clientes pagantes`;
+        }
+    }
+
+    async function loadFluxo(start, end) {
+        const res = await fetch(`/api/financeiro/fluxo-caixa?inicio=${start}&fim=${end}`);
+        const r = await res.json();
+        const d = r.data;
+        document.getElementById('fluxo-ent').innerText = fmt(d.entradas);
+        document.getElementById('fluxo-sai').innerText = fmt(d.saidas);
+        const el = document.getElementById('fluxo-res');
+        el.innerText   = fmt(d.resultado);
+        el.style.color = d.resultado >= 0 ? 'var(--green)' : 'var(--danger)';
+    }
+
+    async function loadPerformance(start, end) {
+        const res = await fetch(`/api/financeiro/performance?inicio=${start}&fim=${end}`);
+        const r = await res.json();
+        const d = r.data;
+        const ctx = document.getElementById('chartPerformance').getContext('2d');
+        if(chartPerf) chartPerf.destroy();
+        chartPerf = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: d.labels,
+                datasets: [
+                    { label:'Recebido (R$)', data:d.recebido, backgroundColor:'#00c8a0', stack:'s0' },
+                    { label:'Vencido (R$)',  data:d.vencido,  backgroundColor:'#f05252', stack:'s0' },
+                    { label:'Inadimplência (%)', type:'line', data:d.perc_inad,
+                      borderColor:'#60a5fa', borderWidth:2, fill:false,
+                      yAxisID:'y1', tension:0.4, pointBackgroundColor:'#60a5fa', pointRadius:4 }
+                ]
+            },
+            options: {
+                responsive:true, maintainAspectRatio:false,
+                plugins:{ legend:{ labels:{ color:'#9ca3af', font:{size:11} } } },
+                scales:{
+                    x:{ stacked:true, grid:{color:'rgba(255,255,255,0.04)'} },
+                    y:{ stacked:true, beginAtZero:true, grid:{color:'rgba(255,255,255,0.04)'},
+                        ticks:{color:'#6b7280', callback:v=>'R$'+v.toLocaleString('pt-BR')} },
+                    y1:{ position:'right', beginAtZero:true, grid:{drawOnChartArea:false},
+                         ticks:{color:'#60a5fa', callback:v=>v+'%'} }
+                }
+            }
+        });
+    }
+
+    async function loadEvolucao(start, end) {
+        const res = await fetch(`/api/financeiro/evolucao?inicio=${start}&fim=${end}`);
+        const r = await res.json();
+        const d = r.data;
+        const ctx = document.getElementById('chartEvolucao').getContext('2d');
+        if(chartEvol) chartEvol.destroy();
+        chartEvol = new Chart(ctx, {
+            type:'line',
+            data:{
+                labels:d.labels,
+                datasets:[
+                    { label:'Recebido',     data:d.recebido,     borderColor:'#00c8a0',
+                      backgroundColor:'rgba(0,200,160,0.08)', fill:true, tension:0.3, borderWidth:2, pointRadius:3 },
+                    { label:'Inadimplente', data:d.inadimplente, borderColor:'#f05252',
+                      backgroundColor:'rgba(240,82,82,0.08)',  fill:true, tension:0.3, borderWidth:2, pointRadius:3 }
+                ]
+            },
+            options:{
+                responsive:true, maintainAspectRatio:false,
+                plugins:{ legend:{ labels:{ color:'#9ca3af', font:{size:11} } } },
+                scales:{
+                    x:{ grid:{color:'rgba(255,255,255,0.04)'} },
+                    y:{ beginAtZero:true, grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280'} }
+                }
+            }
+        });
+    }
+
+    async function loadAging(start, end) {
+        const res = await fetch(`/api/financeiro/aging?inicio=${start}&fim=${end}`);
+        const r = await res.json();
+        const d = r.data;
+        const ctx = document.getElementById('chartAging').getContext('2d');
+        if(chartAging) chartAging.destroy();
+        chartAging = new Chart(ctx, {
+            type:'bar',
+            data:{
+                labels:d.labels,
+                datasets:[{ label:'Em Aberto', data:d.valores,
+                    backgroundColor:['#00c8a0','#f59e0b','#f05252','#6b7280'],
+                    borderRadius:6 }]
+            },
+            options:{
+                responsive:true, maintainAspectRatio:false,
+                plugins:{ legend:{display:false} },
+                scales:{
+                    x:{ grid:{display:false} },
+                    y:{ beginAtZero:true, grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#6b7280'} }
+                }
+            }
+        });
+    }
+
+    async function loadDevedores(start, end) {
+        const res = await fetch(`/api/financeiro/devedores?inicio=${start}&fim=${end}`);
+        const r = await res.json();
+        const tbody = document.getElementById('table-devedores');
+        tbody.innerHTML = '';
+        (r.data||[]).forEach((dev,i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <span style="display:inline-block;width:20px;height:20px;background:rgba(240,82,82,0.1);
+                    color:var(--danger);border-radius:5px;text-align:center;line-height:20px;
+                    font-size:10px;font-weight:700;margin-right:8px;">${i+1}</span>
+                    ${dev.cliente}
+                </td>
+                <td style="text-align:center; color:var(--muted);">${dev.qtd_titulos}</td>
+                <td style="text-align:right; padding-right:18px; color:var(--danger); font-weight:600; font-family:'Syne',sans-serif;">
+                    ${fmt(dev.total_devido)}
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    window.onload = () => {
+        restorePeriod();      // aplica período salvo (ou 'month' como padrão)
+        loadSparklines();     // sparklines são fixos nos últimos 6 meses
+    };
+</script>
+{% endblock %}

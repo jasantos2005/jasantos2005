@@ -1,0 +1,214 @@
+{% extends "base/layout.html" %}
+{% block content %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800 font-weight-bold"><i class="fas fa-file-invoice-dollar mr-2 text-danger"></i>Contas a Pagar</h1>
+
+    <div class="bg-white p-2 rounded-pill shadow-sm border d-flex align-items-center px-3">
+        <input type="date" id="data_inicio" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;">
+        <span class="mx-2 text-muted">até</span>
+        <input type="date" id="data_fim" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;">
+        <button onclick="updateUI()" class="btn btn-danger btn-sm rounded-pill px-3 ml-2">
+            <i class="fas fa-filter fa-sm"></i> Filtrar
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-0 shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Passivo Total (Período)</div>
+                        <div id="passivo-total" class="h3 mb-0 font-weight-bold text-gray-800">R$ 0,00</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-wallet fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-0 border-left-danger shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Passivo Vencido</div>
+                        <div id="passivo-vencido" class="h3 mb-0 font-weight-bold text-danger">R$ 0,00</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-exclamation-circle fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-0 border-left-warning shadow-sm rounded-xl">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pressão (Próximos 30 Dias)</div>
+                        <div id="pressao-30" class="h3 mb-0 font-weight-bold text-gray-800">R$ 0,00</div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-clock fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-7 col-lg-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3 bg-white border-0 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Projeção de Saídas (Fluxo Futuro)</h6>
+                <i class="fas fa-chart-bar text-gray-300"></i>
+            </div>
+            <div class="card-body">
+                <div style="height: 320px;"><canvas id="chartPagarBarras"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5 col-lg-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header py-3 bg-white border-0 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Top 5 Fornecedores</h6>
+                <i class="fas fa-chart-pie text-gray-300"></i>
+            </div>
+            <div class="card-body">
+                <div style="height: 320px;"><canvas id="chartFornecedores"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm mb-4 bg-dark text-white border-0 rounded-xl">
+            <div class="card-body d-flex align-items-center justify-content-around py-4">
+                <div class="text-center border-right pr-5 border-secondary">
+                    <h5 class="font-weight-bold text-warning mb-0">Sustentabilidade Financeira</h5>
+                    <small class="text-muted">Relação Pagos vs. Abertos no Período</small>
+                </div>
+                <div id="sustenta-val" class="display-4 font-weight-bold text-white">0%</div>
+                <div style="max-width: 450px;" class="small text-gray-400 d-none d-md-block">
+                    Este índice indica a capacidade de pagamento do provedor. Um valor baixo em relação ao Contas a Receber sugere a necessidade de revisão do fluxo de caixa ou renegociação com fornecedores.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+    
+    // Instâncias Globais dos Gráficos
+    let chartObjBarras = null;
+    let chartObjRosca = null;
+
+    // Inicialização de Datas (Primeiro dia do mês até hoje)
+    const agora = new Date();
+    const primeiroDia = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
+    const hoje = agora.toISOString().split('T')[0];
+    
+    document.getElementById('data_inicio').value = primeiroDia;
+    document.getElementById('data_fim').value = hoje;
+
+    async function updateUI() {
+        const inicio = document.getElementById('data_inicio').value;
+        const fim = document.getElementById('data_fim').value;
+
+        try {
+            const res = await fetch(`/api/financeiro/pagar/resumo?inicio=${inicio}&fim=${fim}`);
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                const d = result.data;
+                
+                // Atualiza os Cards
+                document.getElementById('passivo-total').innerText = fmtBRL(d.passivo_total.total);
+                document.getElementById('passivo-vencido').innerText = fmtBRL(d.passivo_vencido.total);
+                document.getElementById('pressao-30').innerText = fmtBRL(d.pressao_30d.total);
+                document.getElementById('sustenta-val').innerText = `${d.sustentabilidade.total}%`;
+
+                renderCharts(d);
+            }
+        } catch (e) { 
+            console.error("Erro Axiom Core (Pagar):", e); 
+        }
+    }
+
+    function renderCharts(d) {
+        // --- 1. GRÁFICO DE BARRAS (PROJEÇÃO) ---
+        const ctxBar = document.getElementById('chartPagarBarras').getContext('2d');
+        if (chartObjBarras) chartObjBarras.destroy();
+        
+        chartObjBarras = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['Vencido', 'Próx. 30 Dias', 'Próx. 90 Dias'],
+                datasets: [{
+                    label: 'Volume R$',
+                    data: [d.passivo_vencido.total, d.pressao_30d.total, d.projecao_90d.total],
+                    backgroundColor: ['#e74a3b', '#f6c23e', '#4e73df'],
+                    borderRadius: 8,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // --- 2. GRÁFICO DE ROSCA (TOP FORNECEDORES) ---
+        const ctxRosca = document.getElementById('chartFornecedores').getContext('2d');
+        if (chartObjRosca) chartObjRosca.destroy();
+
+        // Extrai dados da lista retornada pelo service
+        const labelsForn = d.top_fornecedores.map(item => item.fornecedor);
+        const valuesForn = d.top_fornecedores.map(item => item.total);
+
+        chartObjRosca = new Chart(ctxRosca, {
+            type: 'doughnut',
+            data: {
+                labels: labelsForn,
+                datasets: [{
+                    data: valuesForn,
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                    borderWidth: 2,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 15, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${fmtBRL(context.raw)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Executa ao carregar a página
+    window.onload = updateUI;
+</script>
+{% endblock %}

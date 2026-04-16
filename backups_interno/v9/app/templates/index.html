@@ -1,0 +1,145 @@
+{% extends "base/layout.html" %}
+{% block content %}
+<style>
+    /* Estilos específicos para os KPIs da Home */
+    .grid-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .kpi-card { background: #1c2128; border: 1px solid #30363d; padding: 20px; border-radius: 8px; position: relative; transition: 0.3s; }
+    .kpi-card:hover { border-color: #58a6ff; transform: translateY(-2px); }
+    .kpi-card .label { color: #8b949e; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-card .value { font-size: 2rem; font-weight: bold; margin: 15px 0; color: #e6edf3; }
+    .footer-kpi { font-size: 12px; color: #8b949e; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid #21262d; padding-top: 12px; }
+    
+    /* Bordas coloridas para indicar status */
+    .border-left-green { border-left: 4px solid #3fb950; }
+    .border-left-blue { border-left: 4px solid #218bff; }
+    .border-left-cyan { border-left: 4px solid #39d353; }
+    .border-left-red { border-left: 4px solid #f85149; }
+    .border-left-orange { border-left: 4px solid #d29922; }
+    .border-left-purple { border-left: 4px solid #bc8cff; }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <div>
+        <h2 style="color: white; margin: 0;">Performance de Recebimento</h2>
+        <p style="color: #8b949e; margin: 5px 0 0 0;">Visão geral da saúde financeira e fluxo de caixa</p>
+    </div>
+    
+    <div style="display: flex; gap: 10px; align-items: center; background: #161b22; padding: 10px; border-radius: 8px; border: 1px solid #30363d;">
+        <input type="date" id="date-start" style="background: #0d1117; border: 1px solid #30363d; color: white; padding: 6px; border-radius: 4px; font-size: 12px;">
+        <input type="date" id="date-end" style="background: #0d1117; border: 1px solid #30363d; color: white; padding: 6px; border-radius: 4px; font-size: 12px;">
+        <button onclick="updateUI()" style="background: #238636; color: white; border: none; padding: 7px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;">
+            <i class="fas fa-sync-alt"></i> Atualizar
+        </button>
+    </div>
+</div>
+
+<div class="grid-kpis">
+    <div class="kpi-card border-left-green">
+        <span class="label">Pagamento no Prazo</span>
+        <div class="value" id="prazo-perc">0%</div>
+        <div class="footer-kpi">
+            <span>Total Recebido: <b id="prazo-val" style="color: #3fb950;">R$ 0,00</b></span>
+            <span>Média de Atraso: <span id="atraso-dias" style="color: #d29922;">0d</span></span>
+        </div>
+    </div>
+
+    <div class="kpi-card border-left-blue">
+        <span class="label">Recuperação (Período)</span>
+        <div class="value" id="rec-perc">0%</div>
+        <div class="footer-kpi">
+            <span>Valor Recuperado: <b id="rec-val" style="color: #218bff;">R$ 0,00</b></span>
+            <span>Taxa Histórica: <span id="rec-hist">0%</span></span>
+        </div>
+    </div>
+
+    <div class="kpi-card border-left-cyan">
+        <span class="label">ARPU Real (Caixa)</span>
+        <div class="value" id="arpu-val">R$ 0,00</div>
+        <div class="footer-kpi">
+            <span>Ticket Médio por Cliente</span>
+            <span>Clientes Pagantes: <b id="arpu-cli">0</b></span>
+        </div>
+    </div>
+
+    <div class="kpi-card border-left-red">
+        <span class="label">Inadimplência Mês</span>
+        <div class="value" id="inad-mes-perc" style="color: #f85149;">0%</div>
+        <div class="footer-kpi">
+            <span>Em Aberto: <b id="inad-mes-val">R$ 0,00</b></span>
+            <span>Vencimento no Mês: <span id="inad-mes-total">R$ 0,00</span></span>
+        </div>
+    </div>
+
+    <div class="kpi-card border-left-orange">
+        <span class="label">Inadimplência Anual</span>
+        <div class="value" id="inad-ano-perc">0%</div>
+        <div class="footer-kpi">
+            <span>Total Acumulado Ano</span>
+            <span>Aberto: <b id="inad-ano-val">R$ 0,00</b></span>
+        </div>
+    </div>
+
+    <div class="kpi-card border-left-purple">
+        <span class="label">Risco de Exposição</span>
+        <div class="value" id="exp-mes-val">R$ 0,00</div>
+        <div class="footer-kpi">
+            <span>Títulos Vencidos</span>
+            <span>Quantidade: <b id="exp-mes-qtd">0</b></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+
+    async function updateUI() {
+        const start = document.getElementById('date-start').value;
+        const end = document.getElementById('date-end').value;
+
+        try {
+            const res = await fetch(`/api/financeiro/resumo?inicio=${start}&fim=${end}`);
+            const result = await res.json();
+
+            if (result.status === 'success') {
+                const d = result.data;
+
+                // Atualizando os IDs conforme o Service
+                document.getElementById('prazo-perc').innerText = `${d.pagamento_prazo.percentual_no_prazo || 0}%`;
+                document.getElementById('prazo-val').innerText = fmt(d.pagamento_prazo.total_pago_no_prazo);
+                document.getElementById('atraso-dias').innerText = `${d.media_atraso.media_dias_atraso || 0}d`;
+
+                document.getElementById('rec-perc').innerText = `${d.recuperacao_mes_ant.taxa_recuperacao || 0}%`;
+                document.getElementById('rec-val').innerText = fmt(d.recuperacao_mes_ant.total_recuperado);
+                document.getElementById('rec-hist').innerText = `${d.recuperacao_historica.taxa_recuperacao_historica || 0}%`;
+
+                document.getElementById('arpu-val').innerText = fmt(d.arpu_caixa.arpu_real);
+                document.getElementById('arpu-cli').innerText = d.arpu_caixa.clientes_pagantes || 0;
+
+                document.getElementById('inad-mes-perc').innerText = `${d.inadimplencia_mes.percentual_inadimplencia || 0}%`;
+                document.getElementById('inad-mes-val').innerText = fmt(d.inadimplencia_mes.total_ainda_em_aberto);
+                document.getElementById('inad-mes-total').innerText = fmt(d.inadimplencia_mes.total_que_venceu_no_mes);
+
+                document.getElementById('inad-ano-perc').innerText = `${d.inadimplencia_ano.percentual_inadimplencia_ano || 0}%`;
+                document.getElementById('inad-ano-val').innerText = fmt(d.inadimplencia_ano.total_em_aberto_no_ano);
+
+                document.getElementById('exp-mes-val').innerText = fmt(d.exposicao_mes.total_exposto);
+                document.getElementById('exp-mes-qtd').innerText = d.exposicao_mes.qtd_titulos_vencidos || 0;
+            }
+        } catch (err) {
+            console.error("Erro na atualização:", err);
+        }
+    }
+
+    // Configuração inicial das datas (Mês Atual)
+    window.onload = () => {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const today = now.toISOString().split('T')[0];
+
+        document.getElementById('date-start').value = firstDay;
+        document.getElementById('date-end').value = today;
+        updateUI();
+    };
+</script>
+
+{% endblock %}
