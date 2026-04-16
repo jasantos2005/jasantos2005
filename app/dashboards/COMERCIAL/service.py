@@ -97,7 +97,7 @@ class ComercialService:
         sql = """
             SELECT
                 f.id AS id_vendedor,
-                COALESCE(f.funcionario, 'Sem Vendedor') AS nome,
+                COALESCE(f.nome, 'Sem Vendedor') AS nome,
                 COUNT(cc.id) AS ativacoes,
                 ROUND(COALESCE(SUM(vdc.valor_contrato), 0), 2) AS receita,
                 ROUND(COALESCE(AVG(vdc.valor_contrato), 0), 2) AS ticket_medio,
@@ -105,11 +105,11 @@ class ComercialService:
                  WHERE cc2.id_vendedor = f.id
                    AND cc2.data_cancelamento BETWEEN %s AND %s) AS cancelamentos
             FROM ixcprovedor.cliente_contrato cc
-            LEFT JOIN ixcprovedor.funcionarios f ON f.id = cc.id_vendedor
+            LEFT JOIN ixcprovedor.vendedor f ON f.id = cc.id_vendedor
             LEFT JOIN ixcprovedor.vd_contratos vdc ON vdc.id = cc.id_vd_contrato
             WHERE cc.data_ativacao BETWEEN %s AND %s
               AND f.id IS NOT NULL
-            GROUP BY f.id, f.funcionario
+            GROUP BY f.id, f.nome
             ORDER BY ativacoes DESC
         """
         rows = self._exec(sql, (inicio, fim, inicio, fim), multi=True)
@@ -194,17 +194,17 @@ class ComercialService:
     def get_produtividade(self):
         sql = """
             SELECT
-                f.funcionario AS nome,
+                f.nome AS nome,
                 DATE_FORMAT(cc.data_ativacao, '%m/%Y') AS mes,
                 COUNT(cc.id) AS ativacoes,
                 ROUND(COALESCE(SUM(vdc.valor_contrato), 0), 2) AS receita
             FROM ixcprovedor.cliente_contrato cc
-            JOIN ixcprovedor.funcionarios f ON f.id = cc.id_vendedor
+            JOIN ixcprovedor.vendedor f ON f.id = cc.id_vendedor
             LEFT JOIN ixcprovedor.vd_contratos vdc ON vdc.id = cc.id_vd_contrato
             WHERE cc.data_ativacao >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
               AND f.id IS NOT NULL
-            GROUP BY f.funcionario, DATE_FORMAT(cc.data_ativacao, '%%Y-%%m'), DATE_FORMAT(cc.data_ativacao, '%%m/%%Y')
-            ORDER BY f.funcionario, MIN(cc.data_ativacao)
+            GROUP BY f.nome, DATE_FORMAT(cc.data_ativacao, '%%Y-%%m'), DATE_FORMAT(cc.data_ativacao, '%%m/%%Y')
+            ORDER BY f.nome, MIN(cc.data_ativacao)
         """
         rows = self._exec(sql, multi=True)
         if not rows:
@@ -260,7 +260,7 @@ class ComercialService:
         # KPIs do período
         sql_kpi = """
             SELECT
-                f.funcionario AS nome,
+                f.nome AS nome,
                 COUNT(cc.id) AS ativacoes,
                 ROUND(COALESCE(SUM(vdc.valor_contrato), 0), 2) AS receita,
                 ROUND(COALESCE(AVG(vdc.valor_contrato), 0), 2) AS ticket_medio,
@@ -268,7 +268,7 @@ class ComercialService:
                  WHERE cc2.id_vendedor = %s
                    AND cc2.data_cancelamento BETWEEN %s AND %s) AS cancelamentos
             FROM ixcprovedor.cliente_contrato cc
-            JOIN ixcprovedor.funcionarios f ON f.id = cc.id_vendedor
+            JOIN ixcprovedor.vendedor f ON f.id = cc.id_vendedor
             LEFT JOIN ixcprovedor.vd_contratos vdc ON vdc.id = cc.id_vd_contrato
             WHERE cc.id_vendedor = %s
               AND cc.data_ativacao BETWEEN %s AND %s
