@@ -6,22 +6,74 @@
     <h1><i class="fas fa-tv" style="color:var(--blue);margin-right:10px;font-size:18px"></i>Painel TV — Comercial</h1>
     <p>KPIs do dia em tempo real — atualiza a cada 60 segundos</p>
   </div>
-  <span style="font-size:11px;color:var(--text3)" id="ultima-atualizacao">—</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span style="font-size:11px;color:var(--text3)" id="ultima-atualizacao">—</span>
+    <button class="btn-period" onclick="toggleFullscreen()" id="btn-fs" title="Tela cheia">
+      <i class="fas fa-expand" id="icon-fs"></i> Tela Cheia
+    </button>
+  </div>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
-  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-file-contract"></i></div><div class="kpi-label">Total Leads Hoje</div><div class="kpi-value v-blue" id="tv-total">—</div></div>
-  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Ativados Hoje</div><div class="kpi-value v-green" id="tv-ativ">—</div></div>
-  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-pen-to-square"></i></div><div class="kpi-label">Aguard. Assinatura</div><div class="kpi-value v-warn" id="tv-aguard">—</div></div>
-  <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">Pendentes</div><div class="kpi-value v-purple" id="tv-pend">—</div></div>
+<div id="tv-content">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+    <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-file-contract"></i></div><div class="kpi-label">Total Leads Hoje</div><div class="kpi-value v-blue" id="tv-total">—</div></div>
+    <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Ativados Hoje</div><div class="kpi-value v-green" id="tv-ativ">—</div></div>
+    <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-pen-to-square"></i></div><div class="kpi-label">Aguard. Assinatura</div><div class="kpi-value v-warn" id="tv-aguard">—</div></div>
+    <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">Pendentes</div><div class="kpi-value v-purple" id="tv-pend">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-bolt" style="margin-right:7px;color:var(--green)"></i>Últimas Ativações do Dia</span></div>
+    <div style="overflow-x:auto">
+      <table class="table-gsg">
+        <thead><tr><th>Cliente</th><th>Vendedor</th><th>Status</th><th>Técnico</th><th>Cadastro</th></tr></thead>
+        <tbody id="tbody-tv"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
-<div class="card">
-  <div class="card-header"><span class="card-title"><i class="fas fa-bolt" style="margin-right:7px;color:var(--green)"></i>Últimas Ativações do Dia</span></div>
-  <div style="overflow-x:auto">
+<style>
+#tv-fullscreen {
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:var(--bg);padding:40px;
+  flex-direction:column;gap:24px;
+}
+#tv-fullscreen.ativo { display:flex; }
+.tv-fs-kpis { display:grid;grid-template-columns:repeat(4,1fr);gap:20px; }
+.tv-fs-kpi {
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:24px;text-align:center;
+}
+.tv-fs-kpi .label { font-size:13px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px }
+.tv-fs-kpi .value { font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:700;line-height:1 }
+.tv-fs-lista { flex:1;overflow:hidden }
+.tv-fs-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:16px }
+.tv-fs-header h2 { font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text) }
+</style>
+
+<!-- MODO FULLSCREEN -->
+<div id="tv-fullscreen">
+  <div class="tv-fs-header">
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:10px;display:flex;align-items:center;justify-content:center"><i class="fas fa-chart-pie" style="color:#fff;font-size:16px"></i></div>
+      <div><div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">Hub Gerencial GSG</div><div style="font-size:12px;color:var(--text3)" id="fs-hora">—</div></div>
+    </div>
+    <button onclick="toggleFullscreen()" style="background:var(--redglow);border:1px solid rgba(240,79,94,.2);border-radius:8px;padding:8px 16px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer">
+      <i class="fas fa-compress"></i> Sair
+    </button>
+  </div>
+  <div class="tv-fs-kpis">
+    <div class="tv-fs-kpi"><div class="label">Leads Hoje</div><div class="value v-blue" id="fs-total">—</div></div>
+    <div class="tv-fs-kpi"><div class="label">Ativados</div><div class="value v-green" id="fs-ativ">—</div></div>
+    <div class="tv-fs-kpi"><div class="label">Aguard. Assinatura</div><div class="value v-warn" id="fs-aguard">—</div></div>
+    <div class="tv-fs-kpi"><div class="label">Pendentes</div><div class="value v-purple" id="fs-pend">—</div></div>
+  </div>
+  <div class="tv-fs-lista">
+    <div class="tv-fs-header"><h2><i class="fas fa-bolt" style="color:var(--green);margin-right:8px"></i>Últimas Ativações</h2></div>
     <table class="table-gsg">
-      <thead><tr><th>Cliente</th><th>Vendedor</th><th>Status</th><th>Técnico</th><th>Cadastro</th></tr></thead>
-      <tbody id="tbody-tv"></tbody>
+      <thead><tr><th>Cliente</th><th>Vendedor</th><th>Status</th><th>Técnico</th></tr></thead>
+      <tbody id="tbody-fs"></tbody>
     </table>
   </div>
 </div>
@@ -30,30 +82,55 @@
 const STATUS_LABEL = {'A':'Ativado','AA':'Aguard. Assinatura','I':'Inativo','P':'Pendente','C':'Cancelado'};
 const STATUS_COR   = {'A':'var(--green)','AA':'var(--warn)','I':'var(--text3)','P':'var(--blue)','C':'var(--red)'};
 
+function toggleFullscreen() {
+  const fs = document.getElementById('tv-fullscreen');
+  fs.classList.toggle('ativo');
+  const icon = document.getElementById('icon-fs');
+  const btn  = document.getElementById('btn-fs');
+  if(fs.classList.contains('ativo')) {
+    icon.className='fas fa-compress'; btn.innerHTML='<i class="fas fa-compress"></i> Sair';
+  } else {
+    icon.className='fas fa-expand'; btn.innerHTML='<i class="fas fa-expand"></i> Tela Cheia';
+  }
+}
+
+function renderAtividades(atividades, tbodyId) {
+  document.getElementById(tbodyId).innerHTML = (atividades||[]).map(a => {
+    const st = a.status_internet || 'P';
+    return `<tr>
+      <td style="font-weight:600">${a.razao||'—'}</td>
+      <td style="color:var(--text2)">${a.vendedor||'—'}</td>
+      <td><span style="color:${STATUS_COR[st]||'var(--text)'};font-weight:600;font-size:12px">${STATUS_LABEL[st]||st}</span></td>
+      <td style="color:var(--text2)">${a.tecnico||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
 async function loadTV() {
   const res = await fetch('/api/comercial/painel-tv');
   const data = await res.json();
-  const t = data.totais || {};
-  document.getElementById('tv-total').innerText  = t.total || 0;
-  document.getElementById('tv-ativ').innerText   = t.ativados || 0;
-  document.getElementById('tv-aguard').innerText = t.aguard_assinatura || 0;
-  document.getElementById('tv-pend').innerText   = t.pendentes || 0;
+  const t = data.totais||{};
 
-  const tbody = document.getElementById('tbody-tv');
-  tbody.innerHTML = (data.atividades || []).map(a => {
-    const st = a.status_internet || 'P';
-    return `<tr>
-      <td style="font-weight:600">${a.razao || '—'}</td>
-      <td style="color:var(--text2)">${a.vendedor || '—'}</td>
-      <td><span style="color:${STATUS_COR[st]||'var(--text)'};font-weight:600;font-size:12px">${STATUS_LABEL[st]||st}</span></td>
-      <td style="color:var(--text2)">${a.tecnico || '—'}</td>
-      <td style="color:var(--text3);font-size:12px">${(a.data_cadastro||'').substring(0,10)}</td>
-    </tr>`;
-  }).join('');
-  document.getElementById('ultima-atualizacao').innerText = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+  ['tv','fs'].forEach(p => {
+    document.getElementById(`${p}-total`).innerText  = t.total||0;
+    document.getElementById(`${p}-ativ`).innerText   = t.ativados||0;
+    document.getElementById(`${p}-aguard`).innerText = t.aguard_assinatura||0;
+    document.getElementById(`${p}-pend`).innerText   = t.pendentes||0;
+  });
+
+  renderAtividades(data.atividades, 'tbody-tv');
+  renderAtividades(data.atividades, 'tbody-fs');
+
+  const agora = new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('ultima-atualizacao').innerText = 'Atualizado: '+agora;
+  document.getElementById('fs-hora').innerText = new Date().toLocaleString('pt-BR');
 }
 
 loadTV();
 setInterval(loadTV, 60000);
+setInterval(() => {
+  const el = document.getElementById('fs-hora');
+  if(el) el.innerText = new Date().toLocaleString('pt-BR');
+}, 1000);
 </script>
 {% endblock %}

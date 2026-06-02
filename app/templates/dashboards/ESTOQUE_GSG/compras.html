@@ -9,16 +9,16 @@
   <button class="btn-refresh" onclick="loadSugestao()"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start;margin-bottom:24px">
   <div>
-    <div class="card" style="margin-bottom:14px">
+    <div class="card">
       <div class="card-header">
         <span class="card-title"><i class="fas fa-lightbulb" style="margin-right:7px;color:var(--warn)"></i>Produtos sugeridos para compra</span>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">
           <input type="checkbox" id="chk-todos" onclick="toggleTodos()"> Selecionar todos
         </label>
       </div>
-      <div style="overflow-x:auto;max-height:500px">
+      <div style="overflow-x:auto;max-height:420px">
         <table class="table-gsg">
           <thead><tr><th></th><th>Produto</th><th>Cat</th><th style="text-align:right">Saldo</th><th style="text-align:right">Cons./Dia</th><th style="text-align:right">Dias</th><th style="text-align:right">Qtd Sug.</th></tr></thead>
           <tbody id="tbody-sug"></tbody>
@@ -30,23 +30,23 @@
   <div class="card">
     <div class="card-header"><span class="card-title"><i class="fas fa-file-invoice" style="margin-right:7px;color:var(--green)"></i>Criar Pedido IXC</span></div>
     <div class="card-body">
-      <div style="margin-bottom:14px">
+      <div style="margin-bottom:12px">
         <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Fornecedor</label>
         <select id="sel-fornecedor" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;outline:none">
           <option value="">Carregando...</option>
         </select>
       </div>
-      <div style="margin-bottom:14px">
+      <div style="margin-bottom:12px">
         <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Condição de Pagamento</label>
         <select id="sel-condicao" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;outline:none">
           <option value="">Carregando...</option>
         </select>
       </div>
-      <div style="margin-bottom:14px">
+      <div style="margin-bottom:12px">
         <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Observação</label>
         <input type="text" id="inp-obs" placeholder="Opcional" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;outline:none">
       </div>
-      <div style="background:var(--bg4);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+      <div style="background:var(--bg4);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--text2)">
         <span id="resumo-sel">0 produtos selecionados</span>
       </div>
       <button onclick="criarPedido()" style="width:100%;background:var(--green);border:none;border-radius:9px;padding:10px;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
@@ -57,8 +57,25 @@
   </div>
 </div>
 
+<!-- HISTÓRICO DE PEDIDOS -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-history" style="margin-right:7px;color:var(--blue)"></i>Histórico de Pedidos</span>
+    <button class="btn-period" onclick="loadHistorico()"><i class="fas fa-sync-alt" id="icon-hist"></i> Atualizar</button>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="table-gsg">
+      <thead><tr><th>#</th><th>Data</th><th>Criado por</th><th style="text-align:center">Itens</th><th>Status</th></tr></thead>
+      <tbody id="tbody-hist"></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
+const STATUS_COR={'pendente':'var(--warn)','auto_ixc':'var(--green)','enviado_ixc':'var(--blue)','cancelado':'var(--red)'};
+const STATUS_LABEL={'pendente':'Pendente','auto_ixc':'Automático IXC','enviado_ixc':'Enviado IXC','cancelado':'Cancelado'};
 let sugestao=[];
+
 function toggleTodos(){
   const chk=document.getElementById('chk-todos').checked;
   document.querySelectorAll('.chk-item').forEach(c=>c.checked=chk);
@@ -68,12 +85,13 @@ function atualizarResumo(){
   const sel=document.querySelectorAll('.chk-item:checked').length;
   document.getElementById('resumo-sel').innerText=sel+' produto(s) selecionado(s)';
 }
+
 async function loadSugestao(){
   document.getElementById('icon-refresh').classList.add('fa-spin');
   const res=await fetch('/api/estoque/hub/sugestao-compra');
   const data=await res.json();
   sugestao=data.itens||[];
-  const STATUS_COR={'critico':'var(--red)','alerta':'var(--warn)','normal':'var(--green)','zerado':'var(--text3)'};
+  const STATUS_COR2={'critico':'var(--red)','alerta':'var(--warn)','normal':'var(--green)','zerado':'var(--text3)'};
   document.getElementById('tbody-sug').innerHTML=sugestao.map(i=>`
     <tr>
       <td><input type="checkbox" class="chk-item" value="${i.id_produto}" onchange="atualizarResumo()"></td>
@@ -81,21 +99,40 @@ async function loadSugestao(){
       <td><span style="font-size:10px;padding:2px 6px;border-radius:3px;background:var(--bg4);color:var(--text3)">${i.categoria}</span></td>
       <td style="text-align:right">${parseFloat(i.saldo).toFixed(0)}</td>
       <td style="text-align:right;color:var(--text2)">${parseFloat(i.consumo_dia).toFixed(2)}</td>
-      <td style="text-align:right;color:${STATUS_COR[i.status]};font-weight:700">${i.dias_cobertura}d</td>
+      <td style="text-align:right;color:${STATUS_COR2[i.status]};font-weight:700">${i.dias_cobertura}d</td>
       <td style="text-align:right;color:var(--blue);font-weight:600">${i.qtd_sugerida}</td>
-    </tr>`).join('');
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem;font-size:12px">Nenhum produto abaixo de 30 dias</td></tr>';
   document.getElementById('icon-refresh').classList.remove('fa-spin');
 }
+
 async function loadFornecedores(){
   const r=await fetch('/api/estoque/hub/fornecedores');
   const d=await r.json();
   document.getElementById('sel-fornecedor').innerHTML=(d.fornecedores||[]).map(f=>`<option value="${f.id}">${f.nome}</option>`).join('');
 }
+
 async function loadCondicoes(){
   const r=await fetch('/api/estoque/hub/condicoes');
   const d=await r.json();
   document.getElementById('sel-condicao').innerHTML=(d.condicoes||[]).map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
 }
+
+async function loadHistorico(){
+  document.getElementById('icon-hist').classList.add('fa-spin');
+  const r=await fetch('/api/estoque/hub/historico-pedidos');
+  const d=await r.json();
+  const pedidos=d.pedidos||[];
+  document.getElementById('tbody-hist').innerHTML=pedidos.length?pedidos.map(p=>`
+    <tr>
+      <td style="color:var(--text3);font-size:12px">#${p.id}</td>
+      <td style="font-size:12px;color:var(--text2)">${(p.criado_em||'').substring(0,16)}</td>
+      <td style="font-size:12px">${p.criado_por||'—'}</td>
+      <td style="text-align:center;color:var(--blue)">${p.qtd_itens||0}</td>
+      <td><span style="font-size:11px;font-weight:700;color:${STATUS_COR[p.status]||'var(--text)'}">${STATUS_LABEL[p.status]||p.status}</span></td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:1rem;font-size:12px">Nenhum pedido encontrado</td></tr>';
+  document.getElementById('icon-hist').classList.remove('fa-spin');
+}
+
 async function criarPedido(){
   const selecionados=[...document.querySelectorAll('.chk-item:checked')].map(c=>c.value);
   if(!selecionados.length){alert('Selecione ao menos um produto');return;}
@@ -109,9 +146,14 @@ async function criarPedido(){
     body:JSON.stringify({itens:selecionados,id_fornecedor:parseInt(forn),
       id_condicao:parseInt(cond),obs:document.getElementById('inp-obs').value})});
   const d=await res.json();
-  if(d.ok){msg.innerText='✅ '+d.msg;msg.style.color='var(--green)';}
-  else{msg.innerText='❌ '+(d.erro||'Erro ao criar pedido');msg.style.color='var(--red)';}
+  if(d.ok){
+    msg.innerText='✅ '+d.msg;msg.style.color='var(--green)';
+    loadHistorico();
+  } else{
+    msg.innerText='❌ '+(d.erro||'Erro ao criar pedido');msg.style.color='var(--red)';
+  }
 }
-window.onload=()=>{loadSugestao();loadFornecedores();loadCondicoes();};
+
+window.onload=()=>{loadSugestao();loadFornecedores();loadCondicoes();loadHistorico();};
 </script>
 {% endblock %}

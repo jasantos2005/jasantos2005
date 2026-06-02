@@ -259,6 +259,7 @@ async def api_inadimplentes(request: Request, dias_min: int = 1):
                     AND f.status = 'A'
                     AND f.data_vencimento < CURDATE()
                 WHERE cc.status = 'A'
+                  AND cc.status_internet IN ('A','FA')
                   AND cc.id_vendedor_ativ > 0
                   AND cc.id_vendedor_ativ != 29
                 GROUP BY cc.id

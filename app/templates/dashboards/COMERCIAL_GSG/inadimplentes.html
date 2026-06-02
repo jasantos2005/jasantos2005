@@ -4,7 +4,7 @@
 <div class="page-header">
   <div class="page-header-left">
     <h1><i class="fas fa-user-slash" style="color:var(--red);margin-right:10px;font-size:18px"></i>Inadimplentes por Vendedor</h1>
-    <p>Clientes com títulos vencidos vinculados ao vendedor de ativação</p>
+    <p>Apenas contratos ativos com títulos vencidos — vinculados ao vendedor de ativação</p>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <select id="filtro-dias" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;outline:none">
@@ -16,17 +16,20 @@
   </div>
 </div>
 
-<div id="kpi-inad" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px">
   <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="kpi-label">Total Inadimplentes</div><div class="kpi-value v-red" id="k-total">—</div></div>
   <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-coins"></i></div><div class="kpi-label">Valor Total em Aberto</div><div class="kpi-value v-warn" id="k-valor">—</div></div>
   <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-calendar-xmark"></i></div><div class="kpi-label">Maior Atraso</div><div class="kpi-value v-red" id="k-maior">—</div></div>
 </div>
 
 <div class="card">
-  <div class="card-header"><span class="card-title"><i class="fas fa-list" style="margin-right:7px;color:var(--red)"></i>Lista de Inadimplentes</span></div>
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-list" style="margin-right:7px;color:var(--red)"></i>Lista de Inadimplentes</span>
+    <span style="font-size:11px;color:var(--text3)">Apenas contratos ativos (A e FA)</span>
+  </div>
   <div style="overflow-x:auto">
     <table class="table-gsg">
-      <thead><tr><th>Cliente</th><th>Vendedor</th><th>Cidade</th><th>Plano</th><th style="text-align:right">Dias</th><th style="text-align:right">Valor</th></tr></thead>
+      <thead><tr><th>Cliente</th><th>Vendedor</th><th>Cidade</th><th>Plano</th><th style="text-align:right">Dias</th><th style="text-align:right">Valor</th><th style="text-align:center">Ação</th></tr></thead>
       <tbody id="tbody-inad"></tbody>
     </table>
   </div>
@@ -34,6 +37,16 @@
 
 <script>
 const fmt = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+
+function abrirWhatsApp(telefone, nome, valor, dias) {
+  const tel = (telefone||'').replace(/\D/g,'');
+  if(!tel) { alert('Telefone não disponível'); return; }
+  const msg = encodeURIComponent(
+    `Olá ${nome}, tudo bem?\n\nIdentificamos um débito em aberto no valor de ${fmt(valor)} com ${dias} dia(s) de atraso.\n\nPodemos verificar a melhor forma de regularizar? 😊`
+  );
+  const url = `https://wa.me/55${tel}?text=${msg}`;
+  window.open(url, '_blank');
+}
 
 async function loadInad() {
   const dias = document.getElementById('filtro-dias').value;
@@ -48,18 +61,27 @@ async function loadInad() {
   document.getElementById('k-valor').innerText = fmt(totalValor);
   document.getElementById('k-maior').innerText = maiorAtraso ? `${maiorAtraso} dias` : '—';
 
-  const tbody = document.getElementById('tbody-inad');
-  tbody.innerHTML = lista.map(r => {
+  document.getElementById('tbody-inad').innerHTML = lista.length ? lista.map(r => {
     const cor = r.dias_atraso > 60 ? 'var(--red)' : r.dias_atraso > 30 ? 'var(--warn)' : 'var(--text2)';
+    const tel = (r.telefone_celular||'').replace(/\D/g,'');
     return `<tr>
-      <td><div style="font-weight:600;font-size:13px">${r.razao||'—'}</div><div style="font-size:11px;color:var(--text3)">${r.telefone_celular||''}</div></td>
+      <td>
+        <div style="font-weight:600;font-size:13px">${r.razao||'—'}</div>
+        <div style="font-size:11px;color:var(--text3)">${r.telefone_celular||'sem telefone'}</div>
+      </td>
       <td style="color:var(--warn)">${r.vendedor||'—'}</td>
       <td style="color:var(--text2)">${r.cidade||'—'}</td>
       <td style="color:var(--text3);font-size:12px">${r.plano||'—'}</td>
       <td style="text-align:right;color:${cor};font-weight:600">${r.dias_atraso||0}d</td>
       <td style="text-align:right;color:var(--red);font-family:'Space Grotesk',sans-serif">${fmt(r.valor_total)}</td>
+      <td style="text-align:center">
+        ${tel ? `<button onclick="abrirWhatsApp('${r.telefone_celular}','${(r.razao||'').replace(/'/g,'')}',${r.valor_total||0},${r.dias_atraso||0})"
+          style="background:var(--greenglow);border:1px solid rgba(16,217,160,.3);border-radius:7px;padding:5px 10px;color:var(--green);font-size:11px;font-weight:600;cursor:pointer">
+          <i class="fab fa-whatsapp"></i> WA
+        </button>` : '<span style="color:var(--text3);font-size:11px">—</span>'}
+      </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:2rem">Nenhum inadimplente encontrado</td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">Nenhum inadimplente encontrado</td></tr>';
   document.getElementById('icon-refresh').classList.remove('fa-spin');
 }
 window.onload = loadInad;
