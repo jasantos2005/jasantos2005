@@ -20,51 +20,82 @@
   <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-calendar-check"></i></div><div class="kpi-label">Aguard. Assinatura</div><div class="kpi-value v-purple" id="kpi-aguard">—</div></div>
 </div>
 
-<div class="card">
-  <div class="card-header"><span class="card-title"><i class="fas fa-ranking-star" style="margin-right:7px;color:var(--warn)"></i>Ranking Completo</span></div>
-  <div style="overflow-x:auto">
-    <table class="table-gsg" id="tabela-ranking">
-      <thead><tr><th>#</th><th>Vendedor</th><th style="text-align:center">Ativados</th><th style="text-align:center">Aguard. Ass.</th><th style="text-align:center">Total</th><th style="text-align:center">Cancelados</th></tr></thead>
-      <tbody id="tbody-ranking"></tbody>
-    </table>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-ranking-star" style="margin-right:7px;color:var(--warn)"></i>Ranking Completo</span></div>
+    <div style="overflow-x:auto">
+      <table class="table-gsg" id="tabela-ranking">
+        <thead><tr><th>#</th><th>Vendedor</th><th style="text-align:center">Ativados</th><th style="text-align:center">Aguard.</th><th style="text-align:center">Total</th><th style="text-align:center">Cancelados</th></tr></thead>
+        <tbody id="tbody-ranking"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-chart-line" style="margin-right:7px;color:var(--green)"></i>Evolução Mensal — últimos 6 meses</span></div>
+    <div style="height:260px"><canvas id="chart-evolucao"></canvas></div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const MEDALHAS = ['🥇','🥈','🥉'];
-let periodo = 'mes';
+Chart.defaults.color='#8892a4';Chart.defaults.borderColor='rgba(255,255,255,0.06)';
+const MEDALHAS=['🥇','🥈','🥉'];
+let periodo='mes', chartEv=null;
 
-function setPeriodo(p, btn) {
-  periodo = p;
-  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+function setPeriodo(p,btn){
+  periodo=p;
+  document.querySelectorAll('.btn-period').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   loadRanking();
 }
 
-async function loadRanking() {
-  const res = await fetch(`/api/comercial/ranking?periodo=${periodo}`);
-  const data = await res.json();
-  const vends = data.vendedores || [];
-
-  const totalAtiv = vends.reduce((s,v) => s + (v.ativados||0), 0);
-  const totalAguard = vends.reduce((s,v) => s + (v.aguard_assinatura||0), 0);
-  document.getElementById('kpi-total').innerText = totalAtiv;
-  document.getElementById('kpi-vend').innerText = vends.filter(v => v.total > 0).length;
-  document.getElementById('kpi-lider').innerText = vends[0]?.nome?.split(' ')[0] || '—';
-  document.getElementById('kpi-aguard').innerText = totalAguard;
-
-  const tbody = document.getElementById('tbody-ranking');
-  tbody.innerHTML = vends.map((v, i) => `
+async function loadRanking(){
+  const res=await fetch(`/api/comercial/ranking?periodo=${periodo}`);
+  const data=await res.json();
+  const vends=data.vendedores||[];
+  const totalAtiv=vends.reduce((s,v)=>s+(v.ativados||0),0);
+  const totalAguard=vends.reduce((s,v)=>s+(v.aguard_assinatura||0),0);
+  document.getElementById('kpi-total').innerText=totalAtiv;
+  document.getElementById('kpi-vend').innerText=vends.filter(v=>v.total>0).length;
+  document.getElementById('kpi-lider').innerText=vends[0]?.nome?.split(' ')[0]||'—';
+  document.getElementById('kpi-aguard').innerText=totalAguard;
+  document.getElementById('tbody-ranking').innerHTML=vends.map((v,i)=>`
     <tr>
-      <td style="font-size:18px;width:40px">${i < 3 ? MEDALHAS[i] : i+1}</td>
+      <td style="font-size:18px;width:40px">${i<3?MEDALHAS[i]:i+1}</td>
       <td style="font-weight:600">${v.nome}</td>
-      <td style="text-align:center"><span style="color:var(--green);font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:16px">${v.ativados||0}</span></td>
+      <td style="text-align:center;color:var(--green);font-weight:700;font-size:16px">${v.ativados||0}</td>
       <td style="text-align:center;color:var(--purple)">${v.aguard_assinatura||0}</td>
       <td style="text-align:center;color:var(--text2)">${v.total||0}</td>
       <td style="text-align:center;color:var(--red)">${v.cancelados||0}</td>
     </tr>`).join('');
 }
 
-window.onload = loadRanking;
+async function loadEvolucao(){
+  const res=await fetch('/api/comercial/evolucao-mensal');
+  const d=await res.json();
+  const ctx=document.getElementById('chart-evolucao').getContext('2d');
+  if(chartEv) chartEv.destroy();
+  chartEv=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:d.meses||[],
+      datasets:(d.series||[]).map(s=>({
+        label:s.nome,data:s.dados,
+        borderColor:s.cor,backgroundColor:s.cor+'22',
+        fill:false,tension:0.3,borderWidth:2,pointRadius:4
+      }))
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+      scales:{
+        x:{grid:{display:false}},
+        y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{stepSize:1}}
+      }
+    }
+  });
+}
+
+window.onload=()=>{loadRanking();loadEvolucao();};
 </script>
 {% endblock %}

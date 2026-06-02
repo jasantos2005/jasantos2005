@@ -272,3 +272,68 @@ async def api_inadimplentes(request: Request, dias_min: int = 1):
     except Exception as e:
         log.error(f"inadimplentes: {e}")
         return {"inadimplentes": [], "erro": str(e)}
+
+# ── EVOLUÇÃO MENSAL POR VENDEDOR ──────────────────────────────
+@router.get("/api/comercial/evolucao-mensal")
+async def api_evolucao_mensal(request: Request):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    try:
+        from app.core.ixc_db_gsg import ixc_conn
+        with ixc_conn() as conn:
+            cur = conn.cursor()
+            # Últimos 6 meses
+            cur.execute("""
+                SELECT v.nome,
+                       DATE_FORMAT(cc.data, '%Y-%m') as mes,
+                       COUNT(*) as ativados
+                FROM ixcprovedor.cliente_contrato cc
+                JOIN ixcprovedor.vendedor v ON v.id = cc.id_vendedor_ativ
+                WHERE cc.data >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                  AND cc.status_internet = 'A'
+                  AND cc.id_vendedor_ativ > 0
+                  AND cc.id_vendedor_ativ != 29
+                GROUP BY v.id, v.nome, mes
+                ORDER BY mes, ativados DESC
+            """)
+            rows = cur.fetchall()
+
+        # Organizar por vendedor e mês
+        from collections import defaultdict
+        import calendar
+        vendedores = {}
+        meses_set  = set()
+        for r in rows:
+            nome = r["nome"]
+            mes  = r["mes"]
+            ativ = int(r["ativados"])
+            meses_set.add(mes)
+            if nome not in vendedores:
+                vendedores[nome] = {}
+            vendedores[nome][mes] = ativ
+
+        meses = sorted(meses_set)
+        # Formatar labels
+        def fmt_mes(m):
+            y, mo = m.split("-")
+            nomes = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+            return f"{nomes[int(mo)-1]}/{y[2:]}"
+
+        CORES = ["#10d9a0","#4f8ef7","#f5a623","#b96ef7","#f04f5e","#64748b","#22d3ee","#a3e635"]
+
+        series = []
+        for i, (nome, dados) in enumerate(sorted(vendedores.items(),
+            key=lambda x: sum(x[1].values()), reverse=True)[:6]):
+            series.append({
+                "nome":  nome.split()[0],
+                "cor":   CORES[i % len(CORES)],
+                "dados": [dados.get(m, 0) for m in meses]
+            })
+
+        return {
+            "meses":  [fmt_mes(m) for m in meses],
+            "series": series,
+        }
+    except Exception as e:
+        log.error(f"evolucao_mensal: {e}")
+        return {"meses": [], "series": [], "erro": str(e)}

@@ -1,0 +1,65 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Entradas por NF{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-truck-ramp-box" style="color:var(--green);margin-right:10px;font-size:18px"></i>Entradas por Nota Fiscal</h1>
+    <p>Compras recebidas no almoxarifado — sincronizado com IXC</p>
+  </div>
+  <div class="date-filter">
+    <i class="fas fa-calendar-alt" style="color:var(--text3);font-size:11px"></i>
+    <input type="date" id="date-start">
+    <span class="date-sep">até</span>
+    <input type="date" id="date-end">
+    <button class="btn-refresh" onclick="loadNF()"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-file-invoice"></i></div><div class="kpi-label">Total de Entradas</div><div class="kpi-value v-green" id="k-total">—</div></div>
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-boxes-stacked"></i></div><div class="kpi-label">Itens Recebidos</div><div class="kpi-value v-blue" id="k-itens">—</div></div>
+  <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-building"></i></div><div class="kpi-label">Fornecedores</div><div class="kpi-value v-purple" id="k-forns">—</div></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-list" style="margin-right:7px;color:var(--green)"></i>Histórico de Entradas</span><span class="badge badge-gray" id="badge-count">— registros</span></div>
+  <div style="overflow-x:auto"><table class="table-gsg">
+    <thead><tr><th>Data</th><th>Fornecedor</th><th>NF</th><th>Produto</th><th style="text-align:right">Qtd</th></tr></thead>
+    <tbody id="tbody-nf"></tbody>
+  </table></div>
+</div>
+
+<script>
+async function loadNF(){
+  document.getElementById('icon-refresh').classList.add('fa-spin');
+  const de=document.getElementById('date-start').value;
+  const ate=document.getElementById('date-end').value;
+  const res=await fetch(`/api/estoque/hub/entradas-nf?de=${de}&ate=${ate}`);
+  const data=await res.json();
+  const entradas=data.entradas||[];
+
+  const forns=new Set(entradas.map(e=>e.fornecedor));
+  document.getElementById('k-total').innerText=entradas.length;
+  document.getElementById('k-itens').innerText=entradas.reduce((s,e)=>s+parseFloat(e.quantidade||0),0).toFixed(0);
+  document.getElementById('k-forns').innerText=forns.size;
+  document.getElementById('badge-count').innerText=entradas.length+' registros';
+
+  document.getElementById('tbody-nf').innerHTML=entradas.length?entradas.map(e=>`
+    <tr>
+      <td style="color:var(--text3);font-size:12px">${(e.data||'').substring(0,10)}</td>
+      <td style="font-size:12px;font-weight:500">${e.fornecedor||'—'}</td>
+      <td style="color:var(--text3);font-size:11px">${e.numero_nf||'—'}</td>
+      <td style="font-size:12px">${e.descricao||'—'}</td>
+      <td style="text-align:right;color:var(--green);font-weight:600">${parseFloat(e.quantidade||0).toFixed(2)}</td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:2rem">Nenhuma entrada encontrada</td></tr>';
+  document.getElementById('icon-refresh').classList.remove('fa-spin');
+}
+
+window.onload=()=>{
+  const now=new Date();
+  document.getElementById('date-start').value=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
+  document.getElementById('date-end').value=now.toISOString().split('T')[0];
+  loadNF();
+};
+</script>
+{% endblock %}

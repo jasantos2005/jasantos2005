@@ -123,6 +123,14 @@ async def pg_projecao(request: Request):
     if not u: from fastapi.responses import RedirectResponse; return RedirectResponse("/")
     return TEMPLATES.TemplateResponse("dashboards/ESTOQUE_GSG/projecao.html", {"request":request,"session":request.session})
 
+
+@router.get("/dashboard/estoque/entradas-nf", response_class=HTMLResponse)
+async def pg_entradas_nf(request: Request):
+    u = request.session.get("user")
+    if not u: from fastapi.responses import RedirectResponse; return RedirectResponse("/")
+    return TEMPLATES.TemplateResponse("dashboards/ESTOQUE_GSG/entradas_nf.html",
+                                      {"request":request,"session":request.session})
+
 # ── APIs ESTOQUE ──────────────────────────────────────────────
 
 @router.get("/api/estoque/hub/dashboard")
@@ -497,3 +505,83 @@ async def api_historico_pedidos(request: Request):
     """).fetchall()
     conn.close()
     return {"pedidos": [dict(r) for r in rows]}
+
+# ── HISTÓRICO POR PRODUTO ─────────────────────────────────────
+@router.get("/api/estoque/hub/historico-produto/{id_produto}")
+async def api_historico_produto(request: Request, id_produto: str):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    conn = db()
+    prod = conn.execute(
+        "SELECT descricao, unidade, categoria FROM produtos WHERE id_produto=?", (id_produto,)
+    ).fetchone()
+    if not prod:
+        conn.close(); return {"erro": "Produto não encontrado"}
+
+    saldo = conn.execute(
+        "SELECT COALESCE(saldo,0) as s FROM saldos WHERE id_produto=?", (id_produto,)
+    ).fetchone()
+
+    saidas_mes = conn.execute("""
+        SELECT strftime('%Y-%m', data) as mes, SUM(quantidade) as total
+        FROM movimentacoes
+        WHERE id_produto=? AND tipo='saida'
+          AND data >= date('now','-6 months')
+        GROUP BY mes ORDER BY mes
+    """, (id_produto,)).fetchall()
+
+    movs = conn.execute("""
+        SELECT tipo, quantidade, responsavel, obs, data
+        FROM movimentacoes
+        WHERE id_produto=?
+        ORDER BY id DESC LIMIT 20
+    """, (id_produto,)).fetchall()
+    conn.close()
+
+    return {
+        "id_produto":    id_produto,
+        "descricao":     prod["descricao"],
+        "unidade":       prod["unidade"] or "un",
+        "categoria":     prod["categoria"] or "GERAL",
+        "saldo_atual":   round(float(saldo["s"]) if saldo else 0, 2),
+        "saidas_mes":    [{"mes": r["mes"], "total": round(float(r["total"]),2)} for r in saidas_mes],
+        "movimentacoes": [dict(r) for r in movs],
+    }
+
+# ── RELATÓRIO DE ENTRADAS POR NF ──────────────────────────────
+@router.get("/api/estoque/hub/entradas-nf")
+async def api_entradas_nf(request: Request, de: str = "", ate: str = ""):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    try:
+        from app.core.ixc_db_gsg import ixc_conn as _ixc
+        params = []
+        filtro = ""
+        if de:  filtro += " AND e.data_entrada >= %s"; params.append(de)
+        if ate: filtro += " AND e.data_entrada <= %s"; params.append(ate)
+
+        with _ixc() as conn:
+            cur = conn.cursor()
+            cur.execute(f"""
+                SELECT e.data_entrada as data,
+                       COALESCE(f.fantasia, f.razao, 'Desconhecido') as fornecedor,
+                       e.numero_nf, e.valor_total,
+                       mp.id_produto, mp.descricao,
+                       SUM(mp.quantidade) as quantidade
+                FROM ixcprovedor.entrada e
+                JOIN ixcprovedor.movimento_produtos mp ON mp.id_entrada = e.id
+                LEFT JOIN ixcprovedor.fornecedor f ON f.id = e.id_fornecedor
+                WHERE e.gera_estoque = 'S'
+                  AND e.id_almox = 1
+                  {filtro}
+                GROUP BY e.id, mp.id_produto, mp.descricao
+                ORDER BY e.data_entrada DESC, e.id DESC
+                LIMIT 300
+            """, params)
+            rows = cur.fetchall()
+
+        return {"entradas": [{k: _safe(val) for k, val in dict(r).items()} for r in rows],
+                "total": len(rows)}
+    except Exception as e:
+        log.error(f"entradas_nf: {e}")
+        return {"entradas": [], "erro": str(e)}

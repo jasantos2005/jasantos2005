@@ -4,7 +4,7 @@
 <div class="page-header">
   <div class="page-header-left">
     <h1><i class="fas fa-home" style="color:var(--green);margin-right:10px;font-size:18px"></i>Estoque CASA</h1>
-    <p>Produtos de instalação residencial — ONT, roteador, drop, roseta, conector</p>
+    <p>Produtos de instalação residencial — clique num produto para ver o histórico</p>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
     <button class="btn-period active" onclick="setFiltro('',this)">Todos</button>
@@ -14,37 +14,72 @@
     <input type="text" id="busca" placeholder="Buscar..." style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:12px;outline:none;width:180px" oninput="filtrar()">
   </div>
 </div>
-<div id="kpi-bar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
   <div class="kpi-card c-green"><div class="kpi-label">Total Itens</div><div class="kpi-value v-green" id="k-total">—</div></div>
   <div class="kpi-card c-red"><div class="kpi-label">Críticos</div><div class="kpi-value v-red" id="k-crit">—</div></div>
   <div class="kpi-card c-warn"><div class="kpi-label">Alerta</div><div class="kpi-value v-warn" id="k-alert">—</div></div>
   <div class="kpi-card c-blue"><div class="kpi-label">Cobertura Média</div><div class="kpi-value v-blue" id="k-cob">—</div></div>
 </div>
 <div class="card">
-  <div class="card-header"><span class="card-title" id="titulo-tabela"><i class="fas fa-list" style="margin-right:7px;color:var(--green)"></i>Produtos CASA</span><span class="badge badge-gray" id="badge-count">0 itens</span></div>
+  <div class="card-header"><span class="card-title"><i class="fas fa-list" style="margin-right:7px;color:var(--green)"></i>Produtos CASA</span><span class="badge badge-gray" id="badge-count">0 itens</span></div>
   <div style="overflow-x:auto"><table class="table-gsg">
     <thead><tr><th>ID</th><th>Descrição</th><th>Unid.</th><th style="text-align:right">Saldo</th><th style="text-align:right">Saída 90d</th><th style="text-align:right">Cons./Dia</th><th style="text-align:right">Cobertura</th><th>Status</th></tr></thead>
     <tbody id="tbody-casa"></tbody>
   </table></div>
 </div>
+
+<!-- MODAL HISTÓRICO -->
+<div id="modal-hist" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;width:640px;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-weight:700;font-size:15px" id="modal-nome">—</div>
+        <div style="font-size:12px;color:var(--text3)">Histórico de movimentações</div>
+      </div>
+      <button onclick="fecharModal()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);cursor:pointer"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Saldo Atual</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--green)" id="modal-saldo">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Categoria</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)" id="modal-cat">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Unidade</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)" id="modal-un">—</div>
+      </div>
+    </div>
+    <div style="height:180px;margin-bottom:16px"><canvas id="modal-chart"></canvas></div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Últimas movimentações</div>
+    <table class="table-gsg">
+      <thead><tr><th>Data</th><th>Tipo</th><th style="text-align:right">Qtd</th><th>Obs</th></tr></thead>
+      <tbody id="modal-movs"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+Chart.defaults.color='#8892a4';Chart.defaults.borderColor='rgba(255,255,255,0.06)';
 const STATUS_COR={'critico':'var(--red)','alerta':'var(--warn)','normal':'var(--green)','zerado':'var(--text3)'};
 const STATUS_LABEL={'critico':'CRÍTICO','alerta':'ALERTA','normal':'NORMAL','zerado':'ZERADO'};
-let todos=[],filtroAtual='';
+const TIPO_COR={'entrada':'var(--green)','saida':'var(--red)','ajuste':'var(--blue)'};
+let todos=[],filtroAtual='',modalChart=null;
+
 function setFiltro(f,btn){filtroAtual=f;document.querySelectorAll('.btn-period').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filtrar();}
 function filtrar(){
   const q=document.getElementById('busca').value.toLowerCase();
   let lista=todos;
   if(filtroAtual) lista=lista.filter(i=>i.status===filtroAtual);
   if(q) lista=lista.filter(i=>i.descricao.toLowerCase().includes(q));
-  renderTabela(lista);
-}
-function renderTabela(lista){
   document.getElementById('badge-count').innerText=lista.length+' itens';
   document.getElementById('tbody-casa').innerHTML=lista.map(i=>`
-    <tr>
+    <tr style="cursor:pointer" onclick="abrirHistorico('${i.id_produto}','${i.descricao.replace(/'/g,"")}')" title="Ver histórico">
       <td style="color:var(--text3);font-size:11px">${i.id_produto}</td>
-      <td style="font-size:12px;font-weight:500">${i.descricao}</td>
+      <td style="font-size:12px;font-weight:500;color:var(--blue)">${i.descricao}</td>
       <td style="color:var(--text3)">${i.unidade}</td>
       <td style="text-align:right;font-weight:600;color:${i.saldo>0?'var(--text)':'var(--red)'}">${parseFloat(i.saldo).toFixed(2)}</td>
       <td style="text-align:right;color:var(--text2)">${parseFloat(i.saida_periodo).toFixed(0)}</td>
@@ -53,6 +88,52 @@ function renderTabela(lista){
       <td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;color:${STATUS_COR[i.status]};background:${STATUS_COR[i.status]}22">${STATUS_LABEL[i.status]}</span></td>
     </tr>`).join('');
 }
+
+async function abrirHistorico(id, nome){
+  const modal=document.getElementById('modal-hist');
+  modal.style.display='flex';
+  document.getElementById('modal-nome').innerText=nome;
+  document.getElementById('modal-saldo').innerText='…';
+
+  const res=await fetch(`/api/estoque/hub/historico-produto/${id}`);
+  const d=await res.json();
+  if(d.erro){fecharModal();return;}
+
+  document.getElementById('modal-saldo').innerText=`${d.saldo_atual} ${d.unidade}`;
+  document.getElementById('modal-cat').innerText=d.categoria;
+  document.getElementById('modal-un').innerText=d.unidade;
+
+  // Gráfico saídas por mês
+  const ctx=document.getElementById('modal-chart').getContext('2d');
+  if(modalChart) modalChart.destroy();
+  const meses=d.saidas_mes||[];
+  modalChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:meses.map(m=>m.mes),
+      datasets:[{label:'Saídas',data:meses.map(m=>m.total),
+        backgroundColor:'rgba(79,142,247,0.6)',borderColor:'#4f8ef7',borderWidth:1,borderRadius:4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'}}}}
+  });
+
+  // Movimentações
+  document.getElementById('modal-movs').innerHTML=(d.movimentacoes||[]).map(m=>`
+    <tr>
+      <td style="font-size:11px;color:var(--text3)">${(m.data||'').substring(0,10)}</td>
+      <td><span style="font-size:10px;font-weight:700;color:${TIPO_COR[m.tipo]||'var(--text)'}">${(m.tipo||'').toUpperCase()}</span></td>
+      <td style="text-align:right;font-weight:600;color:${TIPO_COR[m.tipo]||'var(--text)'}">${parseFloat(m.quantidade||0).toFixed(2)}</td>
+      <td style="font-size:11px;color:var(--text3)">${m.obs||m.responsavel||'—'}</td>
+    </tr>`).join('');
+}
+
+function fecharModal(){
+  document.getElementById('modal-hist').style.display='none';
+  if(modalChart){modalChart.destroy();modalChart=null;}
+}
+
 async function loadCasa(){
   const res=await fetch('/api/estoque/hub/casa');
   const data=await res.json();
