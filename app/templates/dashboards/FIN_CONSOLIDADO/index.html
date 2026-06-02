@@ -1,171 +1,132 @@
 {% extends "base/layout.html" %}
+{% block page_title %}Visão Geral Consolidada{% endblock %}
 {% block content %}
-<div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <h1 class="h3 mb-0 text-gray-800 font-weight-bold"><i class="fas fa-balance-scale mr-2 text-primary"></i>Visão Geral Consolidada</h1>
 
-    <div class="bg-white p-2 rounded-pill shadow-sm border d-flex align-items-center px-3">
-        <input type="date" id="data_inicio" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;">
-        <span class="mx-2 text-muted">até</span>
-        <input type="date" id="data_fim" class="form-control form-control-sm border-0 bg-transparent" style="width: 130px;">
-        <button onclick="updateUI()" class="btn btn-primary btn-sm rounded-pill px-3 ml-2">
-            <i class="fas fa-sync-alt fa-sm"></i> Consolidar
-        </button>
-    </div>
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-layer-group" style="color:var(--purple);margin-right:10px;font-size:18px"></i>Visão Geral Consolidada</h1>
+    <p>Fluxo de caixa previsto e realizado — receitas vs despesas</p>
+  </div>
+  <div class="date-filter">
+    <i class="fas fa-calendar-alt" style="color:var(--text3);font-size:11px"></i>
+    <input type="date" id="data_inicio">
+    <span class="date-sep">até</span>
+    <input type="date" id="data_fim">
+    <button class="btn-refresh" onclick="updateUI()" title="Consolidar">
+      <i class="fas fa-sync-alt" id="icon-refresh"></i>
+    </button>
+  </div>
 </div>
 
-<div class="row">
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-0 border-left-success shadow-sm rounded-xl">
-            <div class="card-body">
-                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total a Receber (Previsto)</div>
-                <div id="val-receber" class="h4 mb-0 font-weight-bold text-gray-800">R$ 0,00</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-0 border-left-danger shadow-sm rounded-xl">
-            <div class="card-body">
-                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total a Pagar (Previsto)</div>
-                <div id="val-pagar" class="h4 mb-0 font-weight-bold text-gray-800">R$ 0,00</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-0 bg-gradient-primary shadow-sm rounded-xl text-white">
-            <div class="card-body">
-                <div class="text-xs font-weight-bold text-uppercase mb-1 opacity-75">Saldo Líquido Previsto</div>
-                <div id="val-saldo" class="h4 mb-0 font-weight-bold">R$ 0,00</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-0 shadow-sm rounded-xl">
-            <div class="card-body">
-                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Comprometimento de Receita</div>
-                <div id="val-compromisso" class="h4 mb-0 font-weight-bold text-gray-800">0%</div>
-            </div>
-        </div>
-    </div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card c-green">
+    <div class="kpi-icon"><i class="fas fa-arrow-trend-up"></i></div>
+    <div class="kpi-label">Total a Receber (Previsto)</div>
+    <div class="kpi-value v-green" id="val-receber">—</div>
+  </div>
+  <div class="kpi-card c-red">
+    <div class="kpi-icon"><i class="fas fa-arrow-trend-down"></i></div>
+    <div class="kpi-label">Total a Pagar (Previsto)</div>
+    <div class="kpi-value v-red" id="val-pagar">—</div>
+  </div>
+  <div class="kpi-card c-blue">
+    <div class="kpi-icon"><i class="fas fa-scale-balanced"></i></div>
+    <div class="kpi-label">Saldo Líquido Previsto</div>
+    <div class="kpi-value" id="val-saldo">—</div>
+  </div>
+  <div class="kpi-card c-warn">
+    <div class="kpi-icon"><i class="fas fa-percent"></i></div>
+    <div class="kpi-label">Comprometimento de Receita</div>
+    <div class="kpi-value v-warn" id="val-compromisso">—</div>
+  </div>
+  <div class="kpi-card c-purple">
+    <div class="kpi-icon"><i class="fas fa-coins"></i></div>
+    <div class="kpi-label">Fluxo Realizado (Caixa Real)</div>
+    <div class="kpi-value v-purple" id="val-realizado">—</div>
+  </div>
 </div>
 
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header py-3 bg-white border-0 d-flex justify-content-between align-items-center">
-                <h6 class="m-0 font-weight-bold text-primary">Evolução do Fluxo de Caixa (Diário)</h6>
-                <span class="badge badge-light text-muted small">Previsto por Vencimento</span>
-            </div>
-            <div class="card-body">
-                <div style="height: 350px;"><canvas id="chartConsolidado"></canvas></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4">
-        <div class="card shadow-sm mb-4 bg-info text-white border-0">
-            <div class="card-body">
-                <h6 class="font-weight-bold"><i class="fas fa-info-circle mr-2"></i>Fluxo de Caixa Realizado</h6>
-                <hr class="border-light">
-                <p class="small">Saldo baseado no que já foi efetivamente liquidado (pagamentos e recebimentos confirmados).</p>
-                <div class="h3 font-weight-bold mt-3" id="val-realizado">R$ 0,00</div>
-                <span class="badge badge-light px-3 py-2 mt-2 text-info">Saldo em Caixa Real</span>
-            </div>
-        </div>
-    </div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-chart-line" style="margin-right:7px;color:var(--green)"></i>Evolução do Fluxo de Caixa — Previsto por Vencimento</span>
+  </div>
+  <div class="card-body">
+    <div style="height:350px"><canvas id="chartConsolidado"></canvas></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
-    const fmtData = (d) => {
-        const date = new Date(d + 'T00:00:00');
-        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    };
+Chart.defaults.color = '#8892a4';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
 
-    let chartObj = null;
+const fmtBRL = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+const fmtData = d => new Date(d+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+let chartObj = null;
 
-    // Datas iniciais (Mês atual)
-    const agora = new Date();
-    document.getElementById('data_inicio').value = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
-    document.getElementById('data_fim').value = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).toISOString().split('T')[0];
+function setLoading(on) {
+  document.getElementById('icon-refresh').classList.toggle('fa-spin', on);
+}
 
-    async function updateUI() {
-        const inicio = document.getElementById('data_inicio').value;
-        const fim = document.getElementById('data_fim').value;
-
-        try {
-            const res = await fetch(`/api/financeiro/consolidado/resumo?inicio=${inicio}&fim=${fim}`);
-            const result = await res.json();
-
-            if (result.status === 'success') {
-                const d = result.data;
-                document.getElementById('val-receber').innerText = fmtBRL(d.receber);
-                document.getElementById('val-pagar').innerText = fmtBRL(d.pagar);
-                document.getElementById('val-saldo').innerText = fmtBRL(d.saldo_previsto);
-                document.getElementById('val-compromisso').innerText = `${d.indices.comprometimento}%`;
-                document.getElementById('val-realizado').innerText = fmtBRL(d.realizado_liquido);
-
-                renderChart(d.timeline);
-            }
-        } catch (e) { console.error("Erro Axiom Consolidado:", e); }
+async function updateUI() {
+  const inicio = document.getElementById('data_inicio').value;
+  const fim    = document.getElementById('data_fim').value;
+  setLoading(true);
+  try {
+    const res    = await fetch(`/api/financeiro/consolidado/resumo?inicio=${inicio}&fim=${fim}`);
+    const result = await res.json();
+    if(result.status === 'success') {
+      const d = result.data;
+      document.getElementById('val-receber').innerText     = fmtBRL(d.receber);
+      document.getElementById('val-pagar').innerText       = fmtBRL(d.pagar);
+      document.getElementById('val-compromisso').innerText = `${d.indices.comprometimento}%`;
+      document.getElementById('val-realizado').innerText   = fmtBRL(d.realizado_liquido);
+      const saldo = d.saldo_previsto;
+      const el = document.getElementById('val-saldo');
+      el.innerText   = fmtBRL(saldo);
+      el.style.color = saldo >= 0 ? 'var(--green)' : 'var(--red)';
+      renderChart(d.timeline);
     }
+  } catch(e){ console.error(e); }
+  setLoading(false);
+}
 
-    function renderChart(timeline) {
-        const ctx = document.getElementById('chartConsolidado').getContext('2d');
-        if (chartObj) chartObj.destroy();
-
-        const labels = timeline.map(t => fmtData(t.data_ref));
-        const dataReceita = timeline.map(t => t.receita);
-        const dataDespesa = timeline.map(t => t.despesa);
-
-        chartObj = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Receitas (R$)',
-                        data: dataReceita,
-                        borderColor: '#1cc88a',
-                        backgroundColor: 'rgba(28, 200, 138, 0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 3
-                    },
-                    {
-                        label: 'Despesas (R$)',
-                        data: dataDespesa,
-                        borderColor: '#e74a3b',
-                        backgroundColor: 'rgba(231, 74, 59, 0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top', align: 'end' },
-                    tooltip: {
-                        callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmtBRL(ctx.raw)}` }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { 
-                        beginAtZero: true,
-                        ticks: { callback: (v) => fmtBRL(v) }
-                    }
-                }
-            }
-        });
+function renderChart(timeline) {
+  const ctx = document.getElementById('chartConsolidado').getContext('2d');
+  if(chartObj) chartObj.destroy();
+  chartObj = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: timeline.map(t => fmtData(t.data_ref)),
+      datasets: [
+        { label:'Receitas (R$)', data:timeline.map(t=>t.receita),
+          borderColor:'#10d9a0', backgroundColor:'rgba(16,217,160,0.08)',
+          fill:true, tension:0.3, borderWidth:2, pointRadius:3 },
+        { label:'Despesas (R$)', data:timeline.map(t=>t.despesa),
+          borderColor:'#f04f5e', backgroundColor:'rgba(240,79,94,0.08)',
+          fill:true, tension:0.3, borderWidth:2, pointRadius:3 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'top', align:'end', labels:{ color:'#8892a4', font:{size:11} } },
+        tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${fmtBRL(ctx.raw)}` } }
+      },
+      scales:{
+        x:{ grid:{ display:false } },
+        y:{ beginAtZero:true, grid:{ color:'rgba(255,255,255,0.05)' },
+            ticks:{ callback: v => fmtBRL(v) } }
+      }
     }
+  });
+}
 
-    window.onload = updateUI;
+window.onload = () => {
+  const agora = new Date();
+  document.getElementById('data_inicio').value = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split('T')[0];
+  document.getElementById('data_fim').value    = new Date(agora.getFullYear(), agora.getMonth()+1, 0).toISOString().split('T')[0];
+  updateUI();
+};
 </script>
 {% endblock %}
