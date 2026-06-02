@@ -87,6 +87,14 @@ def _safe(v):
 
 # ── PÁGINAS HTML ──────────────────────────────────────────────
 
+
+@router.get("/dashboard/estoque/cruzamento-os", response_class=HTMLResponse)
+async def pg_cruzamento_os(request: Request):
+    u = request.session.get("user")
+    if not u: from fastapi.responses import RedirectResponse; return RedirectResponse("/")
+    return TEMPLATES.TemplateResponse("dashboards/ESTOQUE_GSG/cruzamento_os.html",
+                                      {"request":request,"session":request.session})
+
 @router.get("/dashboard/estoque/hub", response_class=HTMLResponse)
 async def pg_hub(request: Request):
     u = request.session.get("user")
