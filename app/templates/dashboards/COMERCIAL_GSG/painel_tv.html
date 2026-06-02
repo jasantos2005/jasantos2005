@@ -1,0 +1,59 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Painel TV{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-tv" style="color:var(--blue);margin-right:10px;font-size:18px"></i>Painel TV — Comercial</h1>
+    <p>KPIs do dia em tempo real — atualiza a cada 60 segundos</p>
+  </div>
+  <span style="font-size:11px;color:var(--text3)" id="ultima-atualizacao">—</span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-file-contract"></i></div><div class="kpi-label">Total Leads Hoje</div><div class="kpi-value v-blue" id="tv-total">—</div></div>
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Ativados Hoje</div><div class="kpi-value v-green" id="tv-ativ">—</div></div>
+  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-pen-to-square"></i></div><div class="kpi-label">Aguard. Assinatura</div><div class="kpi-value v-warn" id="tv-aguard">—</div></div>
+  <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">Pendentes</div><div class="kpi-value v-purple" id="tv-pend">—</div></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-bolt" style="margin-right:7px;color:var(--green)"></i>Últimas Ativações do Dia</span></div>
+  <div style="overflow-x:auto">
+    <table class="table-gsg">
+      <thead><tr><th>Cliente</th><th>Vendedor</th><th>Status</th><th>Técnico</th><th>Cadastro</th></tr></thead>
+      <tbody id="tbody-tv"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const STATUS_LABEL = {'A':'Ativado','AA':'Aguard. Assinatura','I':'Inativo','P':'Pendente','C':'Cancelado'};
+const STATUS_COR   = {'A':'var(--green)','AA':'var(--warn)','I':'var(--text3)','P':'var(--blue)','C':'var(--red)'};
+
+async function loadTV() {
+  const res = await fetch('/api/comercial/painel-tv');
+  const data = await res.json();
+  const t = data.totais || {};
+  document.getElementById('tv-total').innerText  = t.total || 0;
+  document.getElementById('tv-ativ').innerText   = t.ativados || 0;
+  document.getElementById('tv-aguard').innerText = t.aguard_assinatura || 0;
+  document.getElementById('tv-pend').innerText   = t.pendentes || 0;
+
+  const tbody = document.getElementById('tbody-tv');
+  tbody.innerHTML = (data.atividades || []).map(a => {
+    const st = a.status_internet || 'P';
+    return `<tr>
+      <td style="font-weight:600">${a.razao || '—'}</td>
+      <td style="color:var(--text2)">${a.vendedor || '—'}</td>
+      <td><span style="color:${STATUS_COR[st]||'var(--text)'};font-weight:600;font-size:12px">${STATUS_LABEL[st]||st}</span></td>
+      <td style="color:var(--text2)">${a.tecnico || '—'}</td>
+      <td style="color:var(--text3);font-size:12px">${(a.data_cadastro||'').substring(0,10)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ultima-atualizacao').innerText = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+}
+
+loadTV();
+setInterval(loadTV, 60000);
+</script>
+{% endblock %}

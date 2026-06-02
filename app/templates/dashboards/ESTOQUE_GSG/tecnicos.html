@@ -1,0 +1,44 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Estoque por Técnico{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-hard-hat" style="color:var(--warn);margin-right:10px;font-size:18px"></i>Estoque por Técnico</h1>
+    <p>Saldo de cada almoxarifado individual — sincronizado com IXC</p>
+  </div>
+  <button class="btn-refresh" onclick="loadTecnicos()" title="Atualizar"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
+</div>
+
+<div id="grid-tecnicos" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px"></div>
+
+<script>
+async function loadTecnicos() {
+  document.getElementById('icon-refresh').classList.add('fa-spin');
+  const res = await fetch('/api/estoque/tecnicos');
+  const data = await res.json();
+  const grid = document.getElementById('grid-tecnicos');
+  grid.innerHTML = (data.tecnicos||[]).map(t => `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="fas fa-hard-hat" style="margin-right:7px;color:var(--warn)"></i>${t.almox_nome}</span>
+        <span class="badge badge-gray">${t.total_itens} itens</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        ${t.tecnico ? `<div style="padding:10px 18px 0;font-size:12px;color:var(--text3)">Técnico: <strong style="color:var(--text)">${t.tecnico}</strong></div>` : ''}
+        <table class="table-gsg">
+          <tbody>
+            ${(t.produtos||[]).map(p=>`
+              <tr>
+                <td style="font-size:12px">${p.nome}</td>
+                <td style="text-align:right;font-weight:600;color:var(--green);font-family:'Space Grotesk',sans-serif">${parseFloat(p.saldo||0).toFixed(0)} ${p.unidade||'un'}</td>
+              </tr>`).join('')}
+            ${t.produtos?.length===0?'<tr><td colspan="2" style="text-align:center;color:var(--text3);padding:1rem;font-size:12px">Sem itens em estoque</td></tr>':''}
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:13px">Nenhum almoxarifado encontrado.</div>';
+  document.getElementById('icon-refresh').classList.remove('fa-spin');
+}
+window.onload = loadTecnicos;
+</script>
+{% endblock %}

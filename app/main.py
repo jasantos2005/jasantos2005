@@ -25,6 +25,9 @@ try:
 except:
     admin_router = None
 
+from app.dashboards.COMERCIAL_GSG.router import router as comercial_gsg_router
+from app.dashboards.ESTOQUE_GSG.router import router as estoque_gsg_router
+
 app = FastAPI(title="Hub Gerencial — GSG")
 admin_service = AdminService()
 BASE_DIR = "/opt/automacoes/GSG/gestao/diretoria/dashboards/app"
@@ -138,6 +141,9 @@ app.include_router(fin_cons_router, tags=["financeiro_consolidado"])
 app.include_router(comercial_router)
 app.include_router(tecnico_router)
 app.include_router(estoque_router)
+
+app.include_router(comercial_gsg_router)
+app.include_router(estoque_gsg_router)
 
 if admin_router:
     app.include_router(admin_router)

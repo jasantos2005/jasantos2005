@@ -1,0 +1,51 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Metas Comerciais{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-bullseye" style="color:var(--green);margin-right:10px;font-size:18px"></i>Metas Comerciais</h1>
+    <p>Acompanhe o progresso de cada vendedor em relação à meta mensal</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <input type="month" id="mes-sel" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;outline:none">
+    <button class="btn-refresh" onclick="loadMetas()"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
+  </div>
+</div>
+
+<div id="grid-metas" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px"></div>
+
+<script>
+async function loadMetas() {
+  const mes = document.getElementById('mes-sel').value;
+  document.getElementById('icon-refresh').classList.add('fa-spin');
+  const res = await fetch(`/api/comercial/metas?mes=${mes}`);
+  const data = await res.json();
+  const vends = data.vendedores || [];
+
+  const grid = document.getElementById('grid-metas');
+  grid.innerHTML = vends.filter(v => v.ativados > 0 || v.meta > 0).map(v => {
+    const pct = Math.min(v.percentual || 0, 100);
+    const cor = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--warn)' : 'var(--red)';
+    return `<div class="card" style="padding:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-weight:600;font-size:14px">${v.nome}</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:${cor}">${v.ativados}</div>
+      </div>
+      <div style="background:var(--bg4);border-radius:4px;height:6px;overflow:hidden;margin-bottom:8px">
+        <div style="width:${pct}%;height:6px;background:${cor};border-radius:4px;transition:width .6s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">
+        <span>${v.ativados} ativações</span>
+        <span>Meta: ${v.meta || '—'} | ${pct.toFixed(1)}%</span>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--text3);font-size:13px;padding:1rem">Nenhum dado encontrado para este mês.</div>';
+  document.getElementById('icon-refresh').classList.remove('fa-spin');
+}
+
+window.onload = () => {
+  document.getElementById('mes-sel').value = new Date().toISOString().substring(0,7);
+  loadMetas();
+};
+</script>
+{% endblock %}

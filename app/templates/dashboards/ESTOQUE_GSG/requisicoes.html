@@ -1,0 +1,54 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Requisições de Material{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-clipboard-list" style="color:var(--purple);margin-right:10px;font-size:18px"></i>Requisições de Material</h1>
+    <p>Solicitações de material dos técnicos — aprovação e controle</p>
+  </div>
+  <button class="btn-refresh" onclick="loadReqs()"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
+</div>
+
+<div id="lista-reqs"></div>
+
+<script>
+const STATUS_COR = {'pendente':'var(--warn)','aprovada':'var(--green)','cancelada':'var(--red)'};
+const STATUS_LABEL = {'pendente':'Pendente','aprovada':'Aprovada','cancelada':'Cancelada'};
+
+async function loadReqs() {
+  document.getElementById('icon-refresh').classList.add('fa-spin');
+  const res = await fetch('/api/estoque/requisicoes');
+  const data = await res.json();
+  const reqs = data.requisicoes || [];
+  const el = document.getElementById('lista-reqs');
+  if(!reqs.length){
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:2rem">Nenhuma requisição encontrada.</div>';
+    document.getElementById('icon-refresh').classList.remove('fa-spin');
+    return;
+  }
+  el.innerHTML = reqs.map(r => `
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-header">
+        <span class="card-title">Req #${r.id} — ${r.tecnico_nome||'Técnico'}</span>
+        <span style="color:${STATUS_COR[r.status]||'var(--text)'};font-size:12px;font-weight:600">${STATUS_LABEL[r.status]||r.status}</span>
+      </div>
+      <div class="card-body" style="padding:12px 18px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">${r.criada_em} ${r.obs?'| '+r.obs:''} ${r.emergencia?'<span style="color:var(--red);font-weight:700">⚡ EMERGÊNCIA</span>':''}</div>
+        <table class="table-gsg">
+          <thead><tr><th>Produto</th><th style="text-align:right">Solicitado</th><th style="text-align:right">Aprovado</th></tr></thead>
+          <tbody>
+            ${(r.itens||[]).map(i=>`
+              <tr>
+                <td>${i.produto_nome||'ID:'+i.id_produto}</td>
+                <td style="text-align:right;color:var(--blue)">${i.qtd_solicitada} ${i.unidade||'un'}</td>
+                <td style="text-align:right;color:${i.qtd_aprovada>0?'var(--green)':'var(--text3)'}">${i.qtd_aprovada||'—'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('');
+  document.getElementById('icon-refresh').classList.remove('fa-spin');
+}
+window.onload = loadReqs;
+</script>
+{% endblock %}

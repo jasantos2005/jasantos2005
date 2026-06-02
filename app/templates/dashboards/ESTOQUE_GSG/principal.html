@@ -1,0 +1,63 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Estoque Principal{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-warehouse" style="color:var(--blue);margin-right:10px;font-size:18px"></i>Estoque Principal</h1>
+    <p>Saldo do almoxarifado central — sincronizado com o IXC</p>
+  </div>
+  <div style="display:flex;gap:8px">
+    <input type="text" id="busca" placeholder="Buscar produto..." style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;outline:none;width:220px" oninput="filtrar()">
+    <button class="btn-refresh" onclick="syncEstoque()" title="Sincronizar com IXC"><i class="fas fa-sync-alt" id="icon-sync"></i></button>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-boxes-stacked"></i></div><div class="kpi-label">Total de Itens</div><div class="kpi-value v-blue" id="k-itens">—</div></div>
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Produtos com Saldo</div><div class="kpi-value v-green" id="k-saldo">—</div></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-list" style="margin-right:7px;color:var(--blue)"></i>Produtos em Estoque</span></div>
+  <div style="overflow-x:auto">
+    <table class="table-gsg">
+      <thead><tr><th>Produto</th><th>Unidade</th><th style="text-align:right">Saldo</th></tr></thead>
+      <tbody id="tbody-produtos"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let todos = [];
+async function loadEstoque() {
+  const res = await fetch('/api/estoque/principal');
+  const data = await res.json();
+  todos = data.produtos || [];
+  document.getElementById('k-itens').innerText = todos.length;
+  document.getElementById('k-saldo').innerText = todos.filter(p=>p.saldo>0).length;
+  renderTabela(todos);
+}
+function filtrar() {
+  const q = document.getElementById('busca').value.toLowerCase();
+  renderTabela(todos.filter(p => p.nome.toLowerCase().includes(q)));
+}
+function renderTabela(lista) {
+  document.getElementById('tbody-produtos').innerHTML = lista.map(p => `
+    <tr>
+      <td style="font-weight:500">${p.nome}</td>
+      <td style="color:var(--text3)">${p.unidade||'un'}</td>
+      <td style="text-align:right;font-family:'Space Grotesk',sans-serif;font-weight:600;color:${p.saldo>0?'var(--green)':'var(--red)'}">${parseFloat(p.saldo||0).toFixed(2)}</td>
+    </tr>`).join('');
+}
+async function syncEstoque() {
+  const ic = document.getElementById('icon-sync');
+  ic.classList.add('fa-spin');
+  const res = await fetch('/api/estoque/sync', {method:'POST'});
+  const data = await res.json();
+  ic.classList.remove('fa-spin');
+  if(data.ok) { alert(data.msg); loadEstoque(); }
+  else alert('Erro: '+(data.erro||'desconhecido'));
+}
+window.onload = loadEstoque;
+</script>
+{% endblock %}
