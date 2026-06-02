@@ -141,7 +141,7 @@ def buscar_fornecedor_padrao():
     try:
         conn = ixc_conn()
         cur  = conn.cursor()
-        cur.execute("SELECT id, COALESCE(fantasia, razao) as nome FROM ixcprovedor.fornecedor WHERE ativo='S' ORDER BY id LIMIT 1")
+        cur.execute("SELECT id, COALESCE(fantasia, razao) as nome FROM ixcprovedor.fornecedor WHERE id=103")
         forn = cur.fetchone()
         cur.execute("SELECT id, nome FROM ixcprovedor.condicoes_pagamento WHERE ativo='S' AND compra_venda IN ('A','C') ORDER BY id LIMIT 1")
         cond = cur.fetchone()

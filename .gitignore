@@ -1,9 +1,16 @@
 venv/
 __pycache__/
 *.pyc
+*.pyo
 *.db
 *.bkp
 *.bkp2
 *.bak
+*.old
 deploy_*.sh
+update_*.sh
 .env
+*.log
+*.egg-info/
+.DS_Store
+node_modules/

@@ -25,6 +25,7 @@ try:
 except:
     admin_router = None
 
+from app.core.badges_api import router as badges_router
 from app.dashboards.COMERCIAL_GSG.router import router as comercial_gsg_router
 from app.dashboards.ESTOQUE_GSG.router import router as estoque_gsg_router
 
@@ -142,6 +143,7 @@ app.include_router(comercial_router)
 app.include_router(tecnico_router)
 app.include_router(estoque_router)
 
+app.include_router(badges_router)
 app.include_router(comercial_gsg_router)
 app.include_router(estoque_gsg_router)
 

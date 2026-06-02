@@ -174,14 +174,14 @@ footer{padding:14px 28px;border-top:1px solid var(--border);font-size:11px;color
         <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/ranking"><div class="sb-icon"><i class="fas fa-trophy"></i></div><span>Ranking Vendedores</span></a></li>
         <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/metas"><div class="sb-icon"><i class="fas fa-bullseye"></i></div><span>Metas</span></a></li>
         <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/painel-tv"><div class="sb-icon"><i class="fas fa-tv"></i></div><span>Painel TV</span></a></li>
-        <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/inadimplentes"><div class="sb-icon"><i class="fas fa-user-slash"></i></div><span>Inadimplentes</span></a></li>
+        <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/inadimplentes"><div class="sb-icon"><i class="fas fa-user-slash"></i></div><span>Inadimplentes</span><span data-badge="inadimplentes"></span></a></li>
       </ul>
     </div>
     <div class="sb-separator"></div>
     <div class="sb-section">
       <div class="sb-section-label">Estoque</div>
       <ul style="list-style:none">
-        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/hub"><div class="sb-icon"><i class="fas fa-warehouse"></i></div><span>Dashboard</span></a></li>
+        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/hub"><div class="sb-icon"><i class="fas fa-warehouse"></i></div><span>Dashboard</span><span data-badge="estoque"></span></a></li>
         <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/casa"><div class="sb-icon"><i class="fas fa-home"></i></div><span>Estoque CASA</span></a></li>
         <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/infra"><div class="sb-icon"><i class="fas fa-network-wired"></i></div><span>Estoque INFRA</span></a></li>
         <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/movimentacoes"><div class="sb-icon"><i class="fas fa-arrows-up-down"></i></div><span>Movimentações</span></a></li>
@@ -255,5 +255,26 @@ function toggleTheme(){
 })();
 </script>
 {% block scripts %}{% endblock %}
+
+<script>
+async function loadBadges() {
+  try {
+    const res = await fetch('/api/badges');
+    const d   = await res.json();
+    if(d.erro) return;
+    // Estoque críticos
+    const ec = d.estoque_criticos || 0;
+    document.querySelectorAll('[data-badge="estoque"]').forEach(el => {
+      el.innerHTML = ec > 0 ? `<span style="background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:auto">${ec}</span>` : '';
+    });
+    // Inadimplentes
+    const inad = d.inadimplentes || 0;
+    document.querySelectorAll('[data-badge="inadimplentes"]').forEach(el => {
+      el.innerHTML = inad > 0 ? `<span style="background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:auto">${inad}</span>` : '';
+    });
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', loadBadges);
+</script>
 </body>
 </html>

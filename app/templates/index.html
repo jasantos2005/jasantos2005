@@ -1,78 +1,118 @@
 {% extends "base/layout.html" %}
 {% block page_title %}Visão Executiva{% endblock %}
 {% block content %}
+
 <div class="page-header">
   <div class="page-header-left">
-    <h1><i class="fas fa-chart-pie" style="color:var(--green);margin-right:10px;font-size:18px"></i>Performance de Recebimento</h1>
-    <p>Visão geral da saúde financeira e fluxo de caixa</p>
+    <h1><i class="fas fa-gauge-high" style="color:var(--green);margin-right:10px;font-size:18px"></i>Visão Executiva</h1>
+    <p>Painel geral — financeiro, comercial, estoque e operacional</p>
   </div>
-  <div class="date-filter">
-    <i class="fas fa-calendar-alt" style="color:var(--text3);font-size:11px"></i>
-    <input type="date" id="date-start">
-    <span class="date-sep">até</span>
-    <input type="date" id="date-end">
-    <button class="btn-refresh" onclick="updateUI()" title="Atualizar"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
-  </div>
+  <div style="font-size:11px;color:var(--text3)" id="ultima-atualizacao">—</div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px">
-  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Pagamento no Prazo</div><div class="kpi-value v-green" id="prazo-perc">—</div><div class="kpi-sub" id="prazo-val">carregando...</div></div>
-  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-rotate"></i></div><div class="kpi-label">Recuperação Mês Ant.</div><div class="kpi-value v-blue" id="rec-perc">—</div><div class="kpi-sub" id="rec-val">carregando...</div></div>
-  <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-label">ARPU Real / Cliente</div><div class="kpi-value v-purple" id="arpu-val">—</div><div class="kpi-sub" id="arpu-cli">0 clientes pagantes</div></div>
-  <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="kpi-label">Inadimplência Mês</div><div class="kpi-value v-red" id="inad-mes-perc">—</div><div class="kpi-sub" id="inad-mes-val">carregando...</div></div>
-  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-calendar-xmark"></i></div><div class="kpi-label">Inadimplência Anual</div><div class="kpi-value v-warn" id="inad-ano-perc">—</div><div class="kpi-sub" id="inad-ano-val">carregando...</div></div>
-  <div class="kpi-card c-red" style="border-color:rgba(240,79,94,.25)"><div class="kpi-icon" style="background:rgba(240,79,94,.18)"><i class="fas fa-shield-halved"></i></div><div class="kpi-label">Exposição de Risco</div><div class="kpi-value v-red" id="exp-val">—</div><div class="kpi-sub" id="exp-qtd">0 títulos vencidos</div></div>
+
+<!-- FINANCEIRO -->
+<div style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">
+  <i class="fas fa-circle" style="color:var(--green);font-size:6px;margin-right:6px"></i>Financeiro
 </div>
-<div style="margin-bottom:8px">
-  <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:14px">Acessos Rápidos</div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px">
-    {% if 'FIN_REC' in session.user.permissao or session.user.nivel == 99 %}
-    <a href="/dashboard/financeiro" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--greenglow);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:15px;flex-shrink:0"><i class="fas fa-arrow-trend-up"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Contas a Receber</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Inadimplência & KPIs</div></div></div></a>
-    {% endif %}
-    {% if 'FIN_PAG' in session.user.permissao or session.user.nivel == 99 %}
-    <a href="/dashboard/pagar" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--blueglow);display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:15px;flex-shrink:0"><i class="fas fa-file-invoice-dollar"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Contas a Pagar</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Obrigações & Vencimentos</div></div></div></a>
-    {% endif %}
-    {% if 'FIN_CON' in session.user.permissao or session.user.nivel == 99 %}
-    <a href="/dashboard/visao_geral" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--purpleglow);display:flex;align-items:center;justify-content:center;color:var(--purple);font-size:15px;flex-shrink:0"><i class="fas fa-layer-group"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Visão Geral</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Consolidado Financeiro</div></div></div></a>
-    {% endif %}
-    {% if 'COM' in session.user.permissao or session.user.nivel == 99 %}
-    <a href="/dashboard/comercial/" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--warnglow);display:flex;align-items:center;justify-content:center;color:var(--warn);font-size:15px;flex-shrink:0"><i class="fas fa-chart-line"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Performance Vendas</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Comercial & Metas</div></div></div></a>
-    {% endif %}
-    {% if 'TEC' in session.user.permissao or session.user.nivel == 99 %}
-    <a href="/dashboard/tecnico/" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--redglow);display:flex;align-items:center;justify-content:center;color:var(--red);font-size:15px;flex-shrink:0"><i class="fas fa-screwdriver-wrench"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Setor Técnico</div><div style="font-size:11px;color:var(--text3);margin-top:1px">OS & Produtividade</div></div></div></a>
-    {% endif %}
-    {% if 'EST' in session.user.permissao or session.user.nivel == 99 %}
-    <a href="/dashboard/estoque/" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--text2)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--bg4);display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:15px;flex-shrink:0"><i class="fas fa-boxes-stacked"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Estoque</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Inventário & Controle</div></div></div></a>
-    {% endif %}
-  </div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px">
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Pagamento no Prazo</div><div class="kpi-value v-green" id="fin-prazo">—</div><div class="kpi-sub" id="fin-prazo-val">—</div></div>
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-label">ARPU / Cliente</div><div class="kpi-value v-blue" id="fin-arpu">—</div><div class="kpi-sub" id="fin-clientes">—</div></div>
+  <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="kpi-label">Inadimplência Mês</div><div class="kpi-value v-red" id="fin-inad">—</div><div class="kpi-sub" id="fin-inad-val">—</div></div>
+  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-shield-halved"></i></div><div class="kpi-label">Exposição de Risco</div><div class="kpi-value v-warn" id="fin-risco">—</div><div class="kpi-sub" id="fin-risco-qtd">—</div></div>
 </div>
+
+<!-- COMERCIAL -->
+<div style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">
+  <i class="fas fa-circle" style="color:var(--warn);font-size:6px;margin-right:6px"></i>Comercial — hoje
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px">
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-file-contract"></i></div><div class="kpi-label">Leads Hoje</div><div class="kpi-value v-blue" id="com-total">—</div></div>
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Ativados Hoje</div><div class="kpi-value v-green" id="com-ativ">—</div></div>
+  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-pen-to-square"></i></div><div class="kpi-label">Aguard. Assinatura</div><div class="kpi-value v-warn" id="com-aguard">—</div></div>
+  <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-trophy"></i></div><div class="kpi-label">Líder do Dia</div><div class="kpi-value v-purple" id="com-lider" style="font-size:16px">—</div></div>
+</div>
+
+<!-- ESTOQUE -->
+<div style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">
+  <i class="fas fa-circle" style="color:var(--blue);font-size:6px;margin-right:6px"></i>Estoque
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px">
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-home"></i></div><div class="kpi-label">Cobertura CASA</div><div class="kpi-value v-green" id="est-cob-casa">—</div><div class="kpi-sub">dias médios</div></div>
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-network-wired"></i></div><div class="kpi-label">Cobertura INFRA</div><div class="kpi-value v-blue" id="est-cob-infra">—</div><div class="kpi-sub">dias médios</div></div>
+  <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="kpi-label">Itens Críticos</div><div class="kpi-value v-red" id="est-criticos">—</div><div class="kpi-sub">menos de 10 dias</div></div>
+  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-shopping-cart"></i></div><div class="kpi-label">Pedidos Pendentes</div><div class="kpi-value v-warn" id="est-pedidos">—</div></div>
+</div>
+
+<!-- ACESSOS RÁPIDOS -->
+<div style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">
+  <i class="fas fa-circle" style="color:var(--text3);font-size:6px;margin-right:6px"></i>Acessos Rápidos
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+  <a href="/dashboard/financeiro" style="text-decoration:none"><div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:36px;height:36px;border-radius:9px;background:var(--greenglow);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:14px;flex-shrink:0"><i class="fas fa-arrow-trend-up"></i></div><div><div style="font-weight:600;font-size:12px;color:var(--text)">Contas a Receber</div><div style="font-size:11px;color:var(--text3)">Inadimplência & KPIs</div></div></div></a>
+  <a href="/dashboard/pagar" style="text-decoration:none"><div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:36px;height:36px;border-radius:9px;background:var(--blueglow);display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:14px;flex-shrink:0"><i class="fas fa-file-invoice-dollar"></i></div><div><div style="font-weight:600;font-size:12px;color:var(--text)">Contas a Pagar</div><div style="font-size:11px;color:var(--text3)">Obrigações & Vencimentos</div></div></div></a>
+  <a href="/dashboard/comercial/ranking" style="text-decoration:none"><div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:36px;height:36px;border-radius:9px;background:var(--warnglow);display:flex;align-items:center;justify-content:center;color:var(--warn);font-size:14px;flex-shrink:0"><i class="fas fa-trophy"></i></div><div><div style="font-weight:600;font-size:12px;color:var(--text)">Ranking Vendedores</div><div style="font-size:11px;color:var(--text3)">Comercial & Metas</div></div></div></a>
+  <a href="/dashboard/comercial/painel-tv" style="text-decoration:none"><div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:36px;height:36px;border-radius:9px;background:var(--blueglow);display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:14px;flex-shrink:0"><i class="fas fa-tv"></i></div><div><div style="font-weight:600;font-size:12px;color:var(--text)">Painel TV</div><div style="font-size:11px;color:var(--text3)">Tempo Real</div></div></div></a>
+  <a href="/dashboard/estoque/hub" style="text-decoration:none"><div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:36px;height:36px;border-radius:9px;background:var(--blueglow);display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:14px;flex-shrink:0"><i class="fas fa-warehouse"></i></div><div><div style="font-weight:600;font-size:12px;color:var(--text)">Hub Estoque</div><div style="font-size:11px;color:var(--text3)">CASA & INFRA</div></div></div></a>
+  <a href="/dashboard/estoque/compras" style="text-decoration:none"><div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:36px;height:36px;border-radius:9px;background:var(--warnglow);display:flex;align-items:center;justify-content:center;color:var(--warn);font-size:14px;flex-shrink:0"><i class="fas fa-shopping-cart"></i></div><div><div style="font-weight:600;font-size:12px;color:var(--text)">Compras</div><div style="font-size:11px;color:var(--text3)">Sugestão & Pedidos</div></div></div></a>
+  <a href="/dashboard/tecnico/" style="text-decoration:none"><div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:36px;height:36px;border-radius:9px;background:var(--redglow);display:flex;align-items:center;justify-content:center;color:var(--red);font-size:14px;flex-shrink:0"><i class="fas fa-screwdriver-wrench"></i></div><div><div style="font-weight:600;font-size:12px;color:var(--text)">Setor Técnico</div><div style="font-size:11px;color:var(--text3)">OS & Produtividade</div></div></div></a>
+  <a href="/dashboard/comercial/inadimplentes" style="text-decoration:none"><div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .2s" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:36px;height:36px;border-radius:9px;background:var(--redglow);display:flex;align-items:center;justify-content:center;color:var(--red);font-size:14px;flex-shrink:0"><i class="fas fa-user-slash"></i></div><div><div style="font-weight:600;font-size:12px;color:var(--text)">Inadimplentes</div><div style="font-size:11px;color:var(--text3)">Por Vendedor</div></div></div></a>
+</div>
+
 <script>
-const fmt=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
-const fmtP=v=>`${parseFloat(v||0).toFixed(2)}%`;
-function setLoading(on){document.getElementById('icon-refresh').classList.toggle('fa-spin',on)}
-async function updateUI(){
-  const start=document.getElementById('date-start').value;
-  const end=document.getElementById('date-end').value;
-  setLoading(true);
-  try{
-    const res=await fetch(`/api/financeiro/resumo?inicio=${start}&fim=${end}`);
-    const r=await res.json();
-    if(r.status==='success'){
+const fmt = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+const fmtP = v => `${parseFloat(v||0).toFixed(2)}%`;
+
+async function loadFinanceiro() {
+  try {
+    const now = new Date();
+    const inicio = new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
+    const hoje   = now.toISOString().split('T')[0];
+    const res = await fetch(`/api/financeiro/resumo?inicio=${inicio}&fim=${hoje}`);
+    const r   = await res.json();
+    if(r.status==='success') {
       const d=r.data;
-      if(d.pagamento_prazo){document.getElementById('prazo-perc').innerText=fmtP(d.pagamento_prazo.percentual_no_prazo);document.getElementById('prazo-val').innerText=fmt(d.pagamento_prazo.total_pago_no_prazo)+' recebido';}
-      if(d.recuperacao_mes_ant){document.getElementById('rec-perc').innerText=fmtP(d.recuperacao_mes_ant.taxa_recuperacao);document.getElementById('rec-val').innerText=fmt(d.recuperacao_mes_ant.total_recuperado);}
-      if(d.arpu_caixa){document.getElementById('arpu-val').innerText=fmt(d.arpu_caixa.arpu_real);document.getElementById('arpu-cli').innerText=`${d.arpu_caixa.clientes_pagantes||0} clientes pagantes`;}
-      if(d.inadimplencia_mes){document.getElementById('inad-mes-perc').innerText=fmtP(d.inadimplencia_mes.percentual_inadimplencia);document.getElementById('inad-mes-val').innerText=fmt(d.inadimplencia_mes.total_ainda_em_aberto)+' em aberto';}
-      if(d.inadimplencia_ano){document.getElementById('inad-ano-perc').innerText=fmtP(d.inadimplencia_ano.percentual_inadimplencia_ano);document.getElementById('inad-ano-val').innerText=fmt(d.inadimplencia_ano.total_em_aberto_no_ano)+' acumulado';}
-      if(d.exposicao_mes){document.getElementById('exp-val').innerText=fmt(d.exposicao_mes.total_exposto);document.getElementById('exp-qtd').innerText=`${d.exposicao_mes.qtd_titulos_vencidos||0} títulos vencidos`;}
+      if(d.pagamento_prazo){document.getElementById('fin-prazo').innerText=fmtP(d.pagamento_prazo.percentual_no_prazo);document.getElementById('fin-prazo-val').innerText=fmt(d.pagamento_prazo.total_pago_no_prazo)+' recebido';}
+      if(d.arpu_caixa){document.getElementById('fin-arpu').innerText=fmt(d.arpu_caixa.arpu_real);document.getElementById('fin-clientes').innerText=(d.arpu_caixa.clientes_pagantes||0)+' clientes';}
+      if(d.inadimplencia_mes){document.getElementById('fin-inad').innerText=fmtP(d.inadimplencia_mes.percentual_inadimplencia);document.getElementById('fin-inad-val').innerText=fmt(d.inadimplencia_mes.total_ainda_em_aberto)+' em aberto';}
+      if(d.exposicao_mes){document.getElementById('fin-risco').innerText=fmt(d.exposicao_mes.total_exposto);document.getElementById('fin-risco-qtd').innerText=(d.exposicao_mes.qtd_titulos_vencidos||0)+' títulos';}
     }
-  }catch(e){console.error(e);}
-  setLoading(false);
+  } catch(e){console.error('Financeiro:',e)}
 }
-window.onload=()=>{
-  const now=new Date();
-  document.getElementById('date-start').value=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
-  document.getElementById('date-end').value=now.toISOString().split('T')[0];
-  updateUI();
+
+async function loadComercial() {
+  try {
+    const res = await fetch('/api/comercial/painel-tv');
+    const d   = await res.json();
+    const t   = d.totais||{};
+    document.getElementById('com-total').innerText  = t.total||0;
+    document.getElementById('com-ativ').innerText   = t.ativados||0;
+    document.getElementById('com-aguard').innerText = t.aguard_assinatura||0;
+    // Ranking hoje para lider
+    const r2 = await fetch('/api/comercial/ranking?periodo=hoje');
+    const d2 = await r2.json();
+    const lider = (d2.vendedores||[])[0];
+    document.getElementById('com-lider').innerText = lider ? lider.nome.split(' ')[0] : '—';
+  } catch(e){console.error('Comercial:',e)}
+}
+
+async function loadEstoque() {
+  try {
+    const res = await fetch('/api/estoque/hub/dashboard');
+    const d   = await res.json();
+    const r   = d.resumo||{};
+    document.getElementById('est-cob-casa').innerText  = (r.cobertura_casa||0)+'d';
+    document.getElementById('est-cob-infra').innerText = (r.cobertura_infra||0)+'d';
+    document.getElementById('est-criticos').innerText  = (r.itens_criticos||[]).length;
+    document.getElementById('est-pedidos').innerText   = r.pedidos_pendentes||0;
+  } catch(e){console.error('Estoque:',e)}
+}
+
+window.onload = () => {
+  loadFinanceiro();
+  loadComercial();
+  loadEstoque();
+  document.getElementById('ultima-atualizacao').innerText =
+    'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
 };
 </script>
 {% endblock %}

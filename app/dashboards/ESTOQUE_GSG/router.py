@@ -394,3 +394,106 @@ async def api_estoque_minimo(request: Request):
     conn.execute("UPDATE produtos SET estoque_minimo=? WHERE id_produto=?",(body["estoque_minimo"],body["id_produto"]))
     conn.commit(); conn.close()
     return {"ok":True}
+
+# ── EXPORT EXCEL ─────────────────────────────────────────────
+@router.get("/api/estoque/hub/export-excel")
+async def api_export_excel(request: Request, categoria: str = ""):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    try:
+        import openpyxl
+        from openpyxl.styles import PatternFill, Font, Alignment
+        import io
+        from fastapi.responses import StreamingResponse
+
+        cat_like = f"%{categoria.upper()}%" if categoria else "%%"
+        itens = get_itens_categoria(cat_like)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Estoque {categoria or 'Completo'}"
+
+        header_fill = PatternFill("solid", fgColor="1C2330")
+        header_font = Font(bold=True, color="10D9A0", size=10)
+
+        headers = ["ID", "Descrição", "Categoria", "Unidade", "Saldo",
+                   "Saída 90d", "Cons./Dia", "Cobertura (dias)", "Status"]
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        ws.column_dimensions['B'].width = 55
+        ws.column_dimensions['A'].width = 8
+        for col in ['C','D','E','F','G','H','I']:
+            ws.column_dimensions[col].width = 14
+
+        STATUS_CORES = {"critico":"FF4D6A","alerta":"FFB83F","normal":"00E5A0","zerado":"64748B"}
+        alt_fill = PatternFill("solid", fgColor="161B22")
+        norm_fill = PatternFill("solid", fgColor="0F1117")
+
+        for i, item in enumerate(itens):
+            dias = item["dias_cobertura"]
+            row = [
+                item["id_produto"], item["descricao"], item["categoria"],
+                item["unidade"], item["saldo"], item["saida_periodo"],
+                item["consumo_dia"],
+                dias if dias < 999 else "∞",
+                item["status"].upper()
+            ]
+            ws.append(row)
+            fill = alt_fill if i % 2 == 0 else norm_fill
+            for cell in ws[i+2]:
+                cell.fill = fill
+                cell.font = Font(color="E2E8F0", size=10)
+            status_cell = ws.cell(row=i+2, column=9)
+            cor = STATUS_CORES.get(item["status"], "E2E8F0")
+            status_cell.font = Font(color=cor, bold=True, size=10)
+
+        from datetime import datetime as _dt
+        ws.append([])
+        ws.append([f"Gerado em: {_dt.now().strftime('%d/%m/%Y %H:%M')}"])
+
+        buf = io.BytesIO()
+        wb.save(buf); buf.seek(0)
+        nome = f"estoque_{categoria.lower() or 'completo'}_{_dt.now().strftime('%Y%m%d')}.xlsx"
+        return StreamingResponse(buf,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={nome}"})
+    except Exception as e:
+        log.error(f"export_excel: {e}")
+        return {"erro": str(e)}
+
+# ── EXPORT CSV ────────────────────────────────────────────────
+@router.get("/api/estoque/hub/export-csv")
+async def api_export_csv(request: Request, categoria: str = ""):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    import csv, io
+    from fastapi.responses import StreamingResponse
+    from datetime import datetime as _dt
+    cat_like = f"%{categoria.upper()}%" if categoria else "%%"
+    itens = get_itens_categoria(cat_like)
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=["id_produto","descricao","categoria",
+        "unidade","saldo","saida_periodo","consumo_dia","dias_cobertura","status"])
+    w.writeheader(); w.writerows(itens); buf.seek(0)
+    nome = f"estoque_{categoria.lower() or 'completo'}_{_dt.now().strftime('%Y%m%d')}.csv"
+    return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={nome}"})
+
+# ── HISTÓRICO PEDIDOS ─────────────────────────────────────────
+@router.get("/api/estoque/hub/historico-pedidos")
+async def api_historico_pedidos(request: Request):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    conn = db()
+    rows = conn.execute("""
+        SELECT id, status, criado_por, criado_em,
+               json_array_length(itens) as qtd_itens
+        FROM pedidos_compra
+        ORDER BY criado_em DESC LIMIT 30
+    """).fetchall()
+    conn.close()
+    return {"pedidos": [dict(r) for r in rows]}
