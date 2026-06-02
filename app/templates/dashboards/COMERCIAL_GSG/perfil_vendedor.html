@@ -1,0 +1,200 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Perfil do Vendedor{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-user-tie" style="color:var(--blue);margin-right:10px;font-size:18px"></i>Perfil do Vendedor</h1>
+    <p>Score de performance — meta, retenção e adimplência</p>
+  </div>
+  <select id="sel-vendedor" onchange="loadPerfil()"
+    style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text);font-size:13px;outline:none;min-width:200px">
+    <option value="">Selecione um vendedor...</option>
+  </select>
+</div>
+
+<!-- PLACEHOLDER -->
+<div id="perfil-vazio" style="text-align:center;padding:60px 20px;color:var(--text3)">
+  <i class="fas fa-user-tie" style="font-size:48px;margin-bottom:16px;opacity:.3"></i>
+  <div style="font-size:15px;font-weight:500">Selecione um vendedor acima</div>
+  <div style="font-size:13px;margin-top:6px">para ver o perfil completo e score de performance</div>
+</div>
+
+<!-- PERFIL -->
+<div id="perfil-content" style="display:none">
+
+  <!-- SCORE HEADER -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="display:flex;align-items:center;gap:32px;padding:24px">
+      <div style="text-align:center;flex-shrink:0">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:72px;font-weight:900;line-height:1" id="score-num">—</div>
+        <div style="font-size:13px;font-weight:600;margin-top:4px" id="score-perfil">—</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Score /100</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px" id="vend-nome">—</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Performance calculada com base em 3 dimensões</div>
+        <!-- Barra de score -->
+        <div style="background:var(--bg4);border-radius:6px;height:8px;overflow:hidden;margin-bottom:8px">
+          <div id="score-bar" style="height:8px;border-radius:6px;transition:width .8s ease;width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+          <span>0 — Necessita atenção</span>
+          <span>40 — Regular</span>
+          <span>60 — Bom</span>
+          <span>80+ — Excelente</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 DIMENSÕES -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">
+
+    <!-- META -->
+    <div class="card">
+      <div class="card-header"><span class="card-title"><i class="fas fa-bullseye" style="margin-right:7px;color:var(--warn)"></i>Meta</span><span class="badge badge-gray" id="nivel-meta">—</span></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:900" id="score-meta-num">—</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">/100</div>
+        </div>
+        <div style="background:var(--bg4);border-radius:4px;height:4px;overflow:hidden;margin-bottom:12px">
+          <div id="bar-meta" style="height:4px;border-radius:4px;transition:width .6s;background:var(--warn)"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text2)" id="desc-meta">—</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3)" id="det-meta">—</div>
+      </div>
+    </div>
+
+    <!-- RETENÇÃO -->
+    <div class="card">
+      <div class="card-header"><span class="card-title"><i class="fas fa-user-check" style="margin-right:7px;color:var(--green)"></i>Retenção</span><span class="badge badge-gray" id="nivel-ret">—</span></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:900" id="score-ret-num">—</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">/100</div>
+        </div>
+        <div style="background:var(--bg4);border-radius:4px;height:4px;overflow:hidden;margin-bottom:12px">
+          <div id="bar-ret" style="height:4px;border-radius:4px;transition:width .6s;background:var(--green)"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text2)" id="desc-ret">—</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3)" id="det-ret">—</div>
+      </div>
+    </div>
+
+    <!-- ADIMPLÊNCIA -->
+    <div class="card">
+      <div class="card-header"><span class="card-title"><i class="fas fa-circle-check" style="margin-right:7px;color:var(--blue)"></i>Adimplência</span><span class="badge badge-gray" id="nivel-adim">—</span></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:900" id="score-adim-num">—</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">/100</div>
+        </div>
+        <div style="background:var(--bg4);border-radius:4px;height:4px;overflow:hidden;margin-bottom:12px">
+          <div id="bar-adim" style="height:4px;border-radius:4px;transition:width .6s;background:var(--blue)"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text2)" id="desc-adim">—</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3)" id="det-adim">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÚLTIMAS ATIVAÇÕES -->
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-list" style="margin-right:7px;color:var(--blue)"></i>Últimas Ativações</span></div>
+    <div style="overflow-x:auto">
+      <table class="table-gsg">
+        <thead><tr><th>Cliente</th><th>Cidade</th><th>Status</th><th>Data</th></tr></thead>
+        <tbody id="tbody-ativ"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const NIVEL_LABEL = {"ideal":"Ideal","medio":"Médio","baixo":"Baixo"};
+const NIVEL_COR   = {"ideal":"var(--green)","medio":"var(--warn)","baixo":"var(--red)"};
+const ST_COR      = {"A":"var(--green)","FA":"var(--warn)","I":"var(--text3)"};
+const ST_LABEL    = {"A":"Ativo","FA":"Bloqueado Fin.","I":"Inativo","AA":"Aguard. Ass."};
+
+async function loadVendedores() {
+  const res = await fetch('/api/comercial/vendedores');
+  const d   = await res.json();
+  const sel = document.getElementById('sel-vendedor');
+  (d.vendedores||[]).forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.id; o.innerText = v.nome;
+    sel.appendChild(o);
+  });
+}
+
+async function loadPerfil() {
+  const vid = document.getElementById('sel-vendedor').value;
+  if(!vid) {
+    document.getElementById('perfil-vazio').style.display='block';
+    document.getElementById('perfil-content').style.display='none';
+    return;
+  }
+  const res = await fetch(`/api/comercial/vendedores/${vid}/perfil`);
+  const d   = await res.json();
+  if(d.erro) { alert(d.erro); return; }
+
+  document.getElementById('perfil-vazio').style.display='none';
+  document.getElementById('perfil-content').style.display='block';
+
+  // Score header
+  const sc  = d.score_final || 0;
+  const cor = sc>=80?'var(--green)':sc>=60?'var(--blue)':sc>=40?'var(--warn)':'var(--red)';
+  document.getElementById('score-num').innerText   = sc;
+  document.getElementById('score-num').style.color = cor;
+  document.getElementById('score-perfil').innerText   = d.perfil || '—';
+  document.getElementById('score-perfil').style.color = cor;
+  document.getElementById('vend-nome').innerText = d.vendedor?.nome || '—';
+  document.getElementById('score-bar').style.width      = sc+'%';
+  document.getElementById('score-bar').style.background = cor;
+
+  // Dimensões
+  const dims = [
+    {key:'meta',    id:'meta',  cor:'var(--warn)'},
+    {key:'retencao',id:'ret',   cor:'var(--green)'},
+    {key:'adimplencia',id:'adim',cor:'var(--blue)'},
+  ];
+  dims.forEach(({key,id,cor:c}) => {
+    const dim = d.dimensoes[key] || {};
+    const sc2 = dim.score || 0;
+    const niv = dim.nivel || 'baixo';
+    document.getElementById(`score-${id}-num`).innerText   = sc2;
+    document.getElementById(`score-${id}-num`).style.color = NIVEL_COR[niv];
+    document.getElementById(`bar-${id}`).style.width      = sc2+'%';
+    document.getElementById(`bar-${id}`).style.background = NIVEL_COR[niv];
+    document.getElementById(`nivel-${id}`).innerText      = NIVEL_LABEL[niv]||niv;
+    document.getElementById(`nivel-${id}`).style.color    = NIVEL_COR[niv];
+    document.getElementById(`desc-${id}`).innerText = dim.descricao || '—';
+    // Detalhes específicos
+    if(key==='meta')
+      document.getElementById('det-meta').innerText =
+        `${dim.total_vendas} vendas em ${dim.dias_ativos} dias — média ${dim.media_dia}/dia (meta: ${dim.meta_dia}/dia)`;
+    if(key==='retencao')
+      document.getElementById('det-ret').innerText =
+        `${dim.retidos} retidos de ${dim.total} com 90+ dias — ${dim.pct}%`;
+    if(key==='adimplencia')
+      document.getElementById('det-adim').innerText =
+        `${dim.inadimplentes} inadimplentes de ${dim.total} clientes — ${dim.pct}% adimplentes`;
+  });
+
+  // Últimas ativações
+  document.getElementById('tbody-ativ').innerHTML =
+    (d.ultimas_ativacoes||[]).map(a => {
+      const st = a.status_internet || '—';
+      return `<tr>
+        <td style="font-weight:500;font-size:13px">${a.razao||'—'}</td>
+        <td style="color:var(--text2)">${a.cidade||'—'}</td>
+        <td><span style="font-size:11px;font-weight:700;color:${ST_COR[st]||'var(--text)'}">${ST_LABEL[st]||st}</span></td>
+        <td style="color:var(--text3);font-size:12px">${(a.data||'').substring(0,10)}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:1rem">Sem ativações</td></tr>';
+}
+
+window.onload = loadVendedores;
+</script>
+{% endblock %}

@@ -62,7 +62,7 @@ def buscar_dados():
             FROM ixcprovedor.cliente_contrato cc
             JOIN ixcprovedor.vendedor v ON v.id=cc.id_vendedor_ativ
             WHERE cc.data >= %s AND cc.status_internet='A'
-              AND cc.id_vendedor_ativ > 0 AND cc.id_vendedor_ativ != 29
+              AND cc.id_vendedor_ativ IN (2, 5, 20, 21)
             GROUP BY v.id, v.nome ORDER BY total DESC LIMIT 1
         """, (mes,))
         return r_inad, r_hoje, r_com, r_top[0] if r_top else None

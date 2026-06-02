@@ -40,6 +40,14 @@ def _safe(v):
 
 # ── PÁGINAS HTML ──────────────────────────────────────────────
 
+
+@router.get("/dashboard/comercial/perfil", response_class=HTMLResponse)
+async def pg_perfil_vendedor(request: Request):
+    u = request.session.get("user")
+    if not u: from fastapi.responses import RedirectResponse; return RedirectResponse("/")
+    return TEMPLATES.TemplateResponse("dashboards/COMERCIAL_GSG/perfil_vendedor.html",
+                                      {"request":request,"session":request.session})
+
 @router.get("/dashboard/comercial/ranking", response_class=HTMLResponse)
 async def pg_ranking(request: Request):
     user = request.session.get("user")
@@ -92,8 +100,7 @@ async def api_ranking(request: Request, periodo: str = "mes"):
                        SUM(cc.status='C')            AS cancelados
                 FROM ixcprovedor.vendedor v
                 JOIN ixcprovedor.cliente_contrato cc ON cc.id_vendedor_ativ = v.id
-                WHERE cc.data >= %s AND cc.id_vendedor_ativ > 0
-                  AND cc.id_vendedor_ativ != 29
+                WHERE cc.data >= %s AND cc.id_vendedor_ativ IN (2, 5, 20, 21)
                 GROUP BY v.id, v.nome
                 ORDER BY ativados DESC, total DESC
                 LIMIT 20
@@ -132,7 +139,7 @@ async def api_metas(request: Request, mes: str = ""):
                     ON cc.id_vendedor_ativ = v.id
                     AND cc.data >= %s
                     AND cc.status_internet = 'A'
-                WHERE v.id > 0 AND v.id != 29
+                WHERE v.id IN (2, 5, 20, 21)
                 GROUP BY v.id, v.nome
                 ORDER BY ativados DESC
             """, (inicio,))
@@ -188,8 +195,7 @@ async def api_painel_tv(request: Request):
                     SUM(cc.status='P')           AS pendentes
                 FROM ixcprovedor.cliente_contrato cc
                 WHERE cc.data >= %s
-                  AND cc.id_vendedor_ativ > 0
-                  AND cc.id_vendedor_ativ != 29
+                  AND cc.id_vendedor_ativ IN (2, 5, 20, 21)
             """, (hoje,))
             totais = cur.fetchone()
 
@@ -207,8 +213,7 @@ async def api_painel_tv(request: Request):
                     AND o.id_assunto IN (227,110,75,15)
                 LEFT JOIN ixcprovedor.funcionarios f ON f.id = o.id_tecnico
                 WHERE cc.data >= %s
-                  AND cc.id_vendedor_ativ > 0
-                  AND cc.id_vendedor_ativ != 29
+                  AND cc.id_vendedor_ativ IN (2, 5, 20, 21)
                 ORDER BY cc.id DESC LIMIT 15
             """, (hoje,))
             atividades = cur.fetchall()
@@ -260,8 +265,7 @@ async def api_inadimplentes(request: Request, dias_min: int = 1):
                     AND f.data_vencimento < CURDATE()
                 WHERE cc.status = 'A'
                   AND cc.status_internet IN ('A','FA')
-                  AND cc.id_vendedor_ativ > 0
-                  AND cc.id_vendedor_ativ != 29
+                  AND cc.id_vendedor_ativ IN (2, 5, 20, 21)
                 GROUP BY cc.id
                 HAVING dias_atraso >= {dias_min}
                 ORDER BY dias_atraso DESC
@@ -291,8 +295,7 @@ async def api_evolucao_mensal(request: Request):
                 JOIN ixcprovedor.vendedor v ON v.id = cc.id_vendedor_ativ
                 WHERE cc.data >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
                   AND cc.status_internet = 'A'
-                  AND cc.id_vendedor_ativ > 0
-                  AND cc.id_vendedor_ativ != 29
+                  AND cc.id_vendedor_ativ IN (2, 5, 20, 21)
                 GROUP BY v.id, v.nome, mes
                 ORDER BY mes, ativados DESC
             """)
@@ -337,3 +340,140 @@ async def api_evolucao_mensal(request: Request):
     except Exception as e:
         log.error(f"evolucao_mensal: {e}")
         return {"meses": [], "series": [], "erro": str(e)}
+
+# ── PERFIL DO VENDEDOR COM SCORE ──────────────────────────────
+@router.get("/api/comercial/vendedores")
+async def api_vendedores(request: Request):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    try:
+        from app.core.ixc_db_gsg import ixc_conn
+        with ixc_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT DISTINCT v.id, v.nome
+                FROM ixcprovedor.vendedor v
+                JOIN ixcprovedor.cliente_contrato cc ON cc.id_vendedor_ativ = v.id
+                WHERE cc.id_vendedor_ativ IN (2, 5, 20, 21)
+                ORDER BY v.nome
+            """)
+            rows = cur.fetchall()
+        return {"vendedores": [{"id": r["id"], "nome": r["nome"]} for r in rows]}
+    except Exception as e:
+        return {"vendedores": [], "erro": str(e)}
+
+
+@router.get("/api/comercial/vendedores/{vid}/perfil")
+async def api_perfil_vendedor(request: Request, vid: int):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    from datetime import date, timedelta
+    hoje = date.today().strftime("%Y-%m-%d")
+    d90  = (date.today() - timedelta(days=90)).strftime("%Y-%m-%d")
+    d2026 = "2026-01-01"
+    try:
+        from app.core.ixc_db_gsg import ixc_conn
+        with ixc_conn() as conn:
+            cur = conn.cursor()
+
+            # Dados do vendedor
+            cur.execute("SELECT id, nome FROM ixcprovedor.vendedor WHERE id=%s", (vid,))
+            vend = cur.fetchone()
+            if not vend:
+                return {"erro": "Vendedor não encontrado"}
+
+            # META — média de vendas/dia (meta = 4/dia)
+            cur.execute("""
+                SELECT COUNT(*) as total,
+                       COUNT(DISTINCT DATE(data)) as dias
+                FROM ixcprovedor.cliente_contrato
+                WHERE id_vendedor_ativ=%s AND data>=%s AND status='A'
+            """, (vid, d2026))
+            r = cur.fetchone()
+            total_vendas = int(r["total"] or 0)
+            dias_venda   = int(r["dias"] or 1)
+            media_dia    = round(total_vendas / dias_venda, 1)
+            if media_dia >= 4:   score_meta = 100; nivel_meta = "ideal"
+            elif media_dia >= 2: score_meta = 60;  nivel_meta = "medio"
+            else:                score_meta = 30;  nivel_meta = "baixo"
+
+            # RETENÇÃO — clientes 90+ dias ainda ativos
+            cur.execute("""
+                SELECT COUNT(*) as total,
+                       SUM(status_internet='A') as retidos
+                FROM ixcprovedor.cliente_contrato
+                WHERE id_vendedor_ativ=%s
+                  AND data>=%s AND data<=%s AND status='A'
+            """, (vid, d2026, d90))
+            r = cur.fetchone()
+            total_90 = int(r["total"] or 0)
+            retidos  = int(r["retidos"] or 0)
+            pct_ret  = round(retidos / max(total_90, 1) * 100)
+            if pct_ret >= 90:   score_ret = 100; nivel_ret = "ideal"
+            elif pct_ret >= 70: score_ret = 60;  nivel_ret = "medio"
+            else:               score_ret = 30;  nivel_ret = "baixo"
+
+            # ADIMPLÊNCIA — clientes com faturas em dia (últimos 90 dias)
+            cur.execute("""
+                SELECT COUNT(DISTINCT cc.id) as total,
+                       COUNT(DISTINCT CASE WHEN f.status='A'
+                             AND f.data_vencimento < CURDATE() THEN cc.id END) as inad
+                FROM ixcprovedor.cliente_contrato cc
+                LEFT JOIN ixcprovedor.fn_areceber f ON f.id_contrato = cc.id
+                WHERE cc.id_vendedor_ativ=%s AND cc.data>=%s
+                  AND cc.status='A' AND cc.status_internet IN ('A','FA')
+            """, (vid, d90))
+            r = cur.fetchone()
+            total_adim = int(r["total"] or 0)
+            inad       = int(r["inad"] or 0)
+            pct_adim   = round((total_adim - inad) / max(total_adim, 1) * 100)
+            if pct_adim >= 90:   score_adim = 100; nivel_adim = "ideal"
+            elif pct_adim >= 70: score_adim = 60;  nivel_adim = "medio"
+            else:                score_adim = 30;  nivel_adim = "baixo"
+
+            # SCORE FINAL
+            score_final = round((score_meta + score_ret + score_adim) / 3)
+            if score_final >= 80:   perfil = "Excelente"
+            elif score_final >= 60: perfil = "Bom"
+            elif score_final >= 40: perfil = "Regular"
+            else:                   perfil = "Necessita atenção"
+
+            # Últimas 10 ativações
+            cur.execute("""
+                SELECT c.razao, cc.data, cc.status_internet,
+                       ci.nome as cidade
+                FROM ixcprovedor.cliente_contrato cc
+                JOIN ixcprovedor.cliente c ON c.id = cc.id_cliente
+                LEFT JOIN ixcprovedor.cidade ci ON ci.id = c.cidade
+                WHERE cc.id_vendedor_ativ=%s AND cc.status='A'
+                ORDER BY cc.id DESC LIMIT 10
+            """, (vid,))
+            ultimas = cur.fetchall()
+
+        return {
+            "vendedor":    {"id": vend["id"], "nome": vend["nome"]},
+            "score_final": score_final,
+            "perfil":      perfil,
+            "dimensoes": {
+                "meta": {
+                    "score": score_meta, "nivel": nivel_meta,
+                    "media_dia": media_dia, "meta_dia": 4,
+                    "total_vendas": total_vendas, "dias_ativos": dias_venda,
+                    "descricao": "Média de vendas por dia ativo (meta: 4/dia)"
+                },
+                "retencao": {
+                    "score": score_ret, "nivel": nivel_ret,
+                    "pct": pct_ret, "retidos": retidos, "total": total_90,
+                    "descricao": "Clientes que permaneceram 90+ dias na base"
+                },
+                "adimplencia": {
+                    "score": score_adim, "nivel": nivel_adim,
+                    "pct": pct_adim, "inadimplentes": inad, "total": total_adim,
+                    "descricao": "Clientes com faturas em dia (últimos 90 dias)"
+                }
+            },
+            "ultimas_ativacoes": [{k: _safe(val) for k, val in dict(r).items()} for r in ultimas]
+        }
+    except Exception as e:
+        log.error(f"perfil_vendedor: {e}")
+        return {"erro": str(e)}
