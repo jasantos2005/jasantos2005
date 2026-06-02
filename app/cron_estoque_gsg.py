@@ -228,65 +228,107 @@ def gerar_pedido_automatico(itens_para_comprar, forn_id, cond_id, forn_nome):
         log.error(f"Gerar pedido IXC: {e}")
         return None, str(e)
 
+
+def buscar_insuficientes_os():
+    """Verifica produtos insuficientes para OS abertas."""
+    try:
+        import sqlite3
+        import sys
+        sys.path.insert(0, '/opt/automacoes/GSG/gestao/diretoria/dashboards')
+        from app.core.ixc_db_gsg import ixc_select_one
+        DB_EST = "/opt/automacoes/GSG/gestao/diretoria/dashboards/app/gsg_estoque.db"
+
+        r = ixc_select_one("""
+            SELECT COUNT(*) as total
+            FROM ixcprovedor.su_oss_chamado
+            WHERE id_assunto = 311 AND status = 'A'
+        """)
+        total_os = int(r["total"] or 0) if r else 0
+        if total_os == 0:
+            return [], 0
+
+        r2 = ixc_select_one("""
+            SELECT COUNT(*) as total
+            FROM ixcprovedor.su_oss_chamado
+            WHERE id_assunto = 311 AND status = 'F'
+              AND data_fechamento >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+        """)
+        os_90d = max(int(r2["total"] or 1) if r2 else 1, 1)
+
+        conn = sqlite3.connect(DB_EST); conn.row_factory = sqlite3.Row
+        rows = conn.execute("""
+            SELECT p.id_produto, p.descricao, p.unidade,
+                   COALESCE(s.saldo,0) as saldo,
+                   COALESCE(m.total_saida,0) as saida_90d
+            FROM produtos p
+            LEFT JOIN saldos s ON s.id_produto=p.id_produto
+            LEFT JOIN consumo_por_ativacao m ON m.id_produto=p.id_produto
+            WHERE p.categoria='CASA' AND p.ativo=1
+              AND COALESCE(m.total_saida,0) > 0
+        """).fetchall()
+        conn.close()
+
+        insuficientes = []
+        for r in rows:
+            saldo = float(r["saldo"])
+            media = float(r["saida_90d"]) / os_90d
+            necessario = round(media * total_os, 2)
+            if necessario > 0 and saldo < necessario:
+                insuficientes.append({
+                    "descricao": r["descricao"],
+                    "unidade": r["unidade"] or "un",
+                    "saldo": round(saldo, 2),
+                    "necessario": round(necessario, 2),
+                    "deficit": round(necessario - saldo, 2),
+                })
+        return insuficientes, total_os
+    except Exception as e:
+        log.warning(f"cruzamento_os: {e}")
+        return [], 0
+
+
 def msg_alerta(criticos, alerta, pedido_gerado=None):
-    """Monta mensagem de alerta para Telegram."""
     from datetime import timezone, timedelta
     agora = (datetime.now(timezone.utc) - timedelta(hours=3)).strftime("%d/%m/%Y %H:%M")
-    total_crit = sum(len(v) for v in criticos.values())
+    total_crit  = sum(len(v) for v in criticos.values())
     total_alert = sum(len(v) for v in alerta.values())
-
     if total_crit == 0 and total_alert == 0:
         return None
-
-    linhas = [
-        f"📦 <b>ALERTA ESTOQUE GSG — {agora}</b>",
-        ""
-    ]
-
+    linhas = [f"ALERTA ESTOQUE GSG -- {agora}", ""]
     for cat in ["CASA", "INFRA"]:
-        emoji = "🏠" if cat == "CASA" else "⚙️"
-        crit  = criticos.get(cat, [])
-        ale   = alerta.get(cat, [])
-
+        crit = criticos.get(cat, [])
+        ale  = alerta.get(cat, [])
         if not crit and not ale:
             continue
-
-        linhas.append(f"{emoji} <b>ESTOQUE {cat}</b>")
-
+        emoji = "CASA" if cat == "CASA" else "INFRA"
+        linhas.append(f"-- ESTOQUE {cat} --")
         if crit:
-            linhas.append(f"🔴 <b>CRÍTICOS ({len(crit)}) — menos de {DIAS_CRITICO} dias:</b>")
+            linhas.append(f"CRITICOS ({len(crit)}) menos de {DIAS_CRITICO} dias:")
             for i in crit[:8]:
                 dias_txt = "ZERADO" if i["saldo"] <= 0 else f"{i['dias']}d"
-                linhas.append(f"  • {i['descricao'][:45]}")
+                linhas.append(f"  - {i['descricao'][:45]}")
                 linhas.append(f"    Saldo: {i['saldo']} {i['unidade']} | Cobertura: {dias_txt} | Sugerir: {i['qtd_sugerida']}")
-            if len(crit) > 8:
-                linhas.append(f"  ... e mais {len(crit)-8} itens críticos")
-
         if ale:
-            linhas.append(f"🟡 <b>ALERTA ({len(ale)}) — menos de {DIAS_ALERTA} dias:</b>")
+            linhas.append(f"ALERTA ({len(ale)}) - menos de {DIAS_ALERTA} dias:")
             for i in ale[:5]:
-                linhas.append(f"  • {i['descricao'][:45]} — {i['dias']}d | Sugerir: {i['qtd_sugerida']} {i['unidade']}")
-            if len(ale) > 5:
-                linhas.append(f"  ... e mais {len(ale)-5} itens em alerta")
-
+                linhas.append(f"  - {i['descricao'][:45]} - {i['dias']}d | Sugerir: {i['qtd_sugerida']} {i['unidade']}")
         linhas.append("")
-
     if pedido_gerado and isinstance(pedido_gerado, tuple) and pedido_gerado[0]:
         ixc_id, valor_total, itens = pedido_gerado
-        linhas += [
-            f"🛒 <b>PEDIDO AUTOMÁTICO GERADO</b>",
-            f"📋 Pedido <b>#{ixc_id}</b> criado no IXC",
-            f"⏳ Status: <b>Não Liberado</b> — aguarda aprovação do diretor",
-            f"📦 {len(itens)} itens | R$ {valor_total:.2f}",
-            "",
-            "✅ Acesse o IXC para aprovar o pedido",
-        ]
+        linhas.append(f"PEDIDO #{ixc_id} criado no IXC - {len(itens)} itens - R$ {valor_total:.2f}")
+        linhas.append("Status: Nao Liberado - aguarda aprovacao")
     elif pedido_gerado == "ja_existe":
-        linhas += [
-            "ℹ️ <b>Pedido automático não gerado</b>",
-            "Já existe um pedido automático pendente de aprovação nos últimos 7 dias.",
-        ]
-
+        linhas.append("Pedido automatico nao gerado - ja existe pendente")
+    try:
+        insuf, total_os = buscar_insuficientes_os()
+        if insuf and total_os > 0:
+            linhas.append("")
+            linhas.append(f"-- ESTOQUE x OS -- {total_os} instalacoes abertas:")
+            for i in insuf:
+                linhas.append(f"  SEM ESTOQUE: {i['descricao'][:45]}")
+                linhas.append(f"  Saldo: {i['saldo']} | Necessario: {i['necessario']} | Deficit: {i['deficit']} {i['unidade']}")
+    except Exception as e:
+        log.warning(f"cruzamento: {e}")
     return "\n".join(linhas)
 
 def rodar(modo="auto", gerar_pedido=True, chat_destino=None):
@@ -296,7 +338,7 @@ def rodar(modo="auto", gerar_pedido=True, chat_destino=None):
     # Sync saldos primeiro
     try:
         sys.path.insert(0, str(BASE_DIR.parent))
-        exec(open(str(BASE_DIR / "app" / "core" / "sync_estoque_gsg.py")).read())
+        import subprocess; subprocess.run([str(BASE_DIR / 'venv' / 'bin' / 'python3'), str(BASE_DIR / 'app' / 'core' / 'sync_estoque_gsg.py')], cwd=str(BASE_DIR), timeout=60)
     except Exception as e:
         log.warning(f"Sync falhou (continuando): {e}")
 
