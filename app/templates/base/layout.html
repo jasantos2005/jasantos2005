@@ -1,684 +1,236 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Hub Gerencial — GSG</title>
-
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-    <style>
-        /* ── TEMA DARK (padrão) ───────────────────────────────── */
-        :root {
-            --green:    #00c8a0;
-            --green2:   #00e5b8;
-            --accent:   #6366f1;
-            --accent2:  #818cf8;
-            --blue:     #3b82f6;
-            --dark:     #0d0f12;
-            --sidebar:  #111418;
-            --card:     #181c22;
-            --card2:    #1e2330;
-            --border:   rgba(255,255,255,0.07);
-            --text:     #e8eaf0;
-            --muted:    #6b7280;
-            --danger:   #f05252;
-            --warn:     #f59e0b;
-            --info:     #60a5fa;
-            --topbar-bg: #111418;
-            --topbar-border: rgba(255,255,255,0.07);
-            --input-bg: rgba(255,255,255,0.05);
-            --hover-bg: rgba(255,255,255,0.04);
-            --shadow:   0 4px 24px rgba(0,0,0,0.4);
-        }
-
-        /* ── TEMA LIGHT ─────────────────────────────────────── */
-        body.light-mode {
-            --dark:     #f0f4f8;
-            --sidebar:  #ffffff;
-            --card:     #ffffff;
-            --card2:    #f8fafc;
-            --border:   rgba(0,0,0,0.08);
-            --text:     #1a1d2e;
-            --muted:    #64748b;
-            --topbar-bg: #ffffff;
-            --topbar-border: rgba(0,0,0,0.08);
-            --input-bg: rgba(0,0,0,0.04);
-            --hover-bg: rgba(0,0,0,0.03);
-            --shadow:   0 4px 24px rgba(0,0,0,0.08);
-        }
-        body.light-mode #sidebar {
-            box-shadow: 2px 0 12px rgba(0,0,0,0.06);
-        }
-        body.light-mode .nav-link { color: #475569; }
-        body.light-mode .nav-link:hover { background: rgba(0,200,160,0.08); color: var(--green); }
-        body.light-mode .nav-link.active { background: rgba(0,200,160,0.1); color: var(--green); }
-        body.light-mode .brand-text { color: #1a1d2e; }
-        body.light-mode .user-badge { background: rgba(0,0,0,0.04); }
-        body.light-mode .user-name { color: #1a1d2e; }
-        body.light-mode .table-axiom thead th { color: #64748b; border-bottom-color: var(--border); }
-        body.light-mode .table-axiom tbody td { color: #1a1d2e; border-bottom-color: rgba(0,0,0,0.05); }
-        body.light-mode .table-axiom tbody tr:hover td { background: rgba(0,0,0,0.02); }
-        body.light-mode .card-title { color: #94a3b8; }
-        body.light-mode .kpi-value { color: #1a1d2e; }
-        body.light-mode .page-title { color: #1a1d2e; }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background: var(--dark);
-            color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            min-height: 100vh;
-            display: flex;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* ── SIDEBAR ───────────────────────────────── */
-        #sidebar {
-            width: 230px;
-            min-height: 100vh;
-            background: var(--sidebar);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
-            z-index: 100;
-            transition: width .25s ease, background 0.3s;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 20px 18px 16px;
-            border-bottom: 1px solid var(--border);
-        }
-        .brand-icon {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--green), #009e7f);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px; color: #fff;
-            flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(0,200,160,0.3);
-        }
-        .brand-text {
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            font-size: 14px;
-            letter-spacing: 0.5px;
-            color: var(--text);
-            line-height: 1.1;
-            transition: color 0.3s;
-        }
-        .brand-sub {
-            font-size: 9px;
-            color: var(--green);
-            letter-spacing: 2px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .nav-section {
-            padding: 16px 14px 4px;
-        }
-        .nav-label {
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--muted);
-            padding: 0 4px 8px;
-        }
-        .nav-item {
-            list-style: none;
-            margin-bottom: 2px;
-        }
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 12px;
-            border-radius: 8px;
-            color: #9ca3af;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all .2s;
-        }
-        .nav-link:hover {
-            background: rgba(0,200,160,0.08);
-            color: var(--green);
-            text-decoration: none;
-        }
-        .nav-link.active {
-            background: rgba(0,200,160,0.12);
-            color: var(--green);
-            border-left: 3px solid var(--green);
-        }
-        .nav-link i {
-            width: 16px;
-            text-align: center;
-            font-size: 13px;
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-            padding: 14px;
-            border-top: 1px solid var(--border);
-        }
-        .user-badge {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 10px;
-            border-radius: 8px;
-            background: var(--hover-bg);
-            transition: background 0.3s;
-        }
-        .user-avatar {
-            width: 32px; height: 32px;
-            background: linear-gradient(135deg, var(--green), #009e7f);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 700; color: #fff;
-            flex-shrink: 0;
-        }
-        .user-name {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text);
-            line-height: 1.2;
-            transition: color 0.3s;
-        }
-        .user-role {
-            font-size: 10px;
-            color: var(--muted);
-        }
-
-        /* ── MAIN ───────────────────────────────────── */
-        #main {
-            margin-left: 230px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            max-width: calc(100vw - 230px);
-        }
-
-        /* ── TOPBAR ─────────────────────────────────── */
-        #topbar {
-            height: 58px;
-            background: var(--topbar-bg);
-            border-bottom: 1px solid var(--topbar-border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            position: sticky;
-            top: 0;
-            z-index: 90;
-            transition: background 0.3s, border-color 0.3s;
-        }
-        .topbar-left {
-            display: flex; align-items: center; gap: 12px;
-        }
-        .page-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text);
-            transition: color 0.3s;
-        }
-        .topbar-right {
-            display: flex; align-items: center; gap: 12px;
-        }
-        .topbar-user {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--green);
-        }
-        .btn-theme {
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            color: var(--muted);
-            font-size: 13px;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: all .2s;
-            flex-shrink: 0;
-        }
-        .btn-theme:hover {
-            background: rgba(0,200,160,0.1);
-            color: var(--green);
-            border-color: rgba(0,200,160,0.3);
-        }
-        .btn-logout {
-            display: flex; align-items: center; gap: 6px;
-            padding: 6px 14px;
-            border-radius: 7px;
-            background: rgba(240,82,82,0.1);
-            border: 1px solid rgba(240,82,82,0.2);
-            color: var(--danger);
-            font-size: 12px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all .2s;
-        }
-        .btn-logout:hover {
-            background: rgba(240,82,82,0.2);
-            color: var(--danger);
-            text-decoration: none;
-        }
-
-        /* ── CONTENT ─────────────────────────────────── */
-        #content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;   /* centraliza o .content-inner horizontalmente */
-            padding: 0;
-        }
-        /* Container que limita a largura — centralizado pelo align-items do pai */
-        .content-inner {
-            max-width: 1400px;
-            width: 100%;
-            padding: 24px 2rem;
-            box-sizing: border-box;
-            flex: 1;
-        }
-
-        /* ── CARDS ─────────────────────────────────── */
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            overflow: hidden;
-            min-width: 0;       /* impede overflow em células de grid */
-            transition: background 0.3s, border-color 0.3s;
-        }
-        .card:hover {
-            box-shadow: var(--shadow);
-        }
-        .card-header {
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--border);
-            background: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .card-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-        .card-body { padding: 18px; }
-
-        /* ── KPI CARDS COLORIDOS ─────────────────────── */
-        .kpi-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-        .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-        }
-        .kpi-card.green::before  { background: linear-gradient(90deg, var(--green), var(--green2)); }
-        .kpi-card.red::before    { background: linear-gradient(90deg, var(--danger), #ff7070); }
-        .kpi-card.warn::before   { background: linear-gradient(90deg, var(--warn), #fbbf24); }
-        .kpi-card.info::before   { background: linear-gradient(90deg, var(--info), #93c5fd); }
-        .kpi-card.accent::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-
-        .kpi-card .kpi-icon {
-            width: 38px; height: 38px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
-            margin-bottom: 12px;
-        }
-        .kpi-card.green .kpi-icon  { background: rgba(0,200,160,0.12); color: var(--green); }
-        .kpi-card.red .kpi-icon    { background: rgba(240,82,82,0.12); color: var(--danger); }
-        .kpi-card.warn .kpi-icon   { background: rgba(245,158,11,0.12); color: var(--warn); }
-        .kpi-card.info .kpi-icon   { background: rgba(96,165,250,0.12); color: var(--info); }
-        .kpi-card.accent .kpi-icon { background: rgba(99,102,241,0.12); color: var(--accent2); }
-
-        /* ── KPI VALUES ─────────────────────────────── */
-        .kpi-value {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 700;
-            line-height: 1.2;
-            color: var(--text);
-            transition: color 0.3s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .kpi-label {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-bottom: 6px;
-        }
-        .kpi-sub {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--muted);
-            margin-top: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .kpi-green { color: var(--green) !important; }
-        .kpi-red   { color: var(--danger) !important; }
-        .kpi-warn  { color: var(--warn) !important; }
-        .kpi-info  { color: var(--info) !important; }
-        .kpi-accent { color: var(--accent2) !important; }
-
-        /* ── BADGES ─────────────────────────────────── */
-        .badge-green {
-            background: rgba(0,200,160,0.12);
-            color: var(--green);
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 5px;
-            letter-spacing: 0.5px;
-        }
-        .badge-red {
-            background: rgba(240,82,82,0.12);
-            color: var(--danger);
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 5px;
-        }
-        .badge-blue {
-            background: rgba(59,130,246,0.12);
-            color: var(--blue);
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 5px;
-        }
-
-        /* ── TABLES ─────────────────────────────────── */
-        .table-axiom { width: 100%; border-collapse: collapse; }
-        .table-axiom thead th {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            color: var(--muted);
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--border);
-        }
-        .table-axiom tbody td {
-            padding: 11px 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            font-size: 13px;
-            color: var(--text);
-            transition: color 0.3s;
-        }
-        .table-axiom tbody tr:hover td {
-            background: var(--hover-bg);
-        }
-        .table-axiom tbody tr:last-child td { border-bottom: none; }
-
-        /* ── DATE FILTER ─────────────────────────────── */
-        .date-filter {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            padding: 7px 14px;
-            transition: background 0.3s, border-color 0.3s;
-        }
-        .date-filter input[type="date"] {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-        .date-filter input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(0.5);
-            cursor: pointer;
-        }
-        body.light-mode .date-filter input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(0.3);
-        }
-        .date-sep { color: var(--muted); font-size: 12px; }
-        .btn-refresh {
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            background: var(--green);
-            border: none;
-            color: #fff;
-            font-size: 13px;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: all .2s;
-            flex-shrink: 0;
-        }
-        .btn-refresh:hover { background: var(--green2); transform: rotate(90deg); }
-
-        /* ── SECTION TITLE ───────────────────────────── */
-        .section-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--text);
-            transition: color 0.3s;
-        }
-        .section-sub {
-            font-size: 12px;
-            color: var(--muted);
-            margin-top: 2px;
-        }
-
-        /* ── FOOTER ─────────────────────────────────── */
-        footer {
-            padding: 14px 24px;
-            border-top: 1px solid var(--border);
-            text-align: center;
-            font-size: 11px;
-            color: var(--muted);
-        }
-
-        /* ── SCROLLBAR ─────────────────────────────── */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.2); border-radius: 3px; }
-
-        /* ── RESPONSIVE ─────────────────────────────── */
-        @media (max-width: 768px) {
-            #sidebar { width: 60px; }
-            .brand-text, .brand-sub, .nav-link span, .nav-label,
-            .user-name, .user-role { display: none; }
-            #main { margin-left: 60px; max-width: calc(100vw - 60px); }
-            .brand { padding: 18px 13px; justify-content: center; }
-            .nav-link { justify-content: center; padding: 10px; }
-            .user-badge { justify-content: center; }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hub Gerencial — GSG</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b11;--bg2:#0e1117;--bg3:#13181f;--bg4:#1a2030;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.10);
+  --text:#e8ecf2;--text2:#8892a4;--text3:#4f5a6b;
+  --green:#10d9a0;--green2:#06b585;--greenglow:rgba(16,217,160,0.15);
+  --red:#f04f5e;--redglow:rgba(240,79,94,0.12);
+  --warn:#f5a623;--warnglow:rgba(245,166,35,0.12);
+  --blue:#4f8ef7;--blueglow:rgba(79,142,247,0.12);
+  --purple:#8b5cf6;--purpleglow:rgba(139,92,246,0.12);
+  --sidebar-w:240px;--topbar-h:56px;
+  --radius:10px;--radius-lg:14px;
+  --shadow:0 8px 32px rgba(0,0,0,0.4);--trans:all 0.2s ease;
+}
+body.light{
+  --bg:#f0f4f9;--bg2:#ffffff;--bg3:#f8fafc;--bg4:#eef2f8;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.12);
+  --text:#111827;--text2:#4b5563;--text3:#9ca3af;
+  --shadow:0 4px 20px rgba(0,0,0,0.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;line-height:1.5;display:flex;transition:background .3s,color .3s}
+#sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:var(--trans)}
+.sb-brand{display:flex;align-items:center;gap:11px;padding:20px 18px 18px;border-bottom:1px solid var(--border)}
+.sb-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 16px var(--greenglow)}
+.sb-logo i{color:#fff;font-size:15px}
+.sb-brand-text{line-height:1.15}
+.sb-brand-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13.5px;color:var(--text);letter-spacing:.3px}
+.sb-brand-sub{font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--green)}
+.sb-body{flex:1;overflow-y:auto;padding:10px 0}
+.sb-body::-webkit-scrollbar{width:3px}
+.sb-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.sb-section{padding:16px 14px 4px}
+.sb-section-label{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text3);padding:0 6px 8px}
+.sb-item{list-style:none;margin-bottom:1px}
+.sb-link{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;color:var(--text2);text-decoration:none;font-size:13px;font-weight:500;transition:var(--trans);position:relative}
+.sb-link:hover{background:var(--greenglow);color:var(--green);text-decoration:none}
+.sb-link.active{background:var(--greenglow);color:var(--green)}
+.sb-link.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;border-radius:0 3px 3px 0;background:var(--green)}
+.sb-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;background:transparent;transition:var(--trans)}
+.sb-link:hover .sb-icon,.sb-link.active .sb-icon{background:rgba(16,217,160,0.12)}
+.sb-link span{flex:1}
+.sb-footer{padding:12px 14px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--bg3)}
+.sb-avatar{width:32px;height:32px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.2}
+.sb-user-role{font-size:10px;color:var(--text3)}
+.sb-separator{height:1px;background:var(--border);margin:6px 14px}
+#main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+#topbar{height:var(--topbar-h);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100;transition:var(--trans)}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)}
+.topbar-breadcrumb span{color:var(--text);font-weight:600;font-size:13.5px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.topbar-user-dot{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--green)}
+.topbar-user-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.btn-icon{width:32px;height:32px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--trans)}
+.btn-icon:hover{background:var(--greenglow);color:var(--green);border-color:rgba(16,217,160,.3)}
+.btn-logout{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;background:var(--redglow);border:1px solid rgba(240,79,94,.2);color:var(--red);font-size:12px;font-weight:600;text-decoration:none;transition:var(--trans)}
+.btn-logout:hover{background:rgba(240,79,94,.2);color:var(--red);text-decoration:none}
+#content{flex:1;padding:24px 28px;max-width:1600px;width:100%;margin:0 auto}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:var(--trans)}
+.card:hover{border-color:var(--border2)}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--text2)}
+.card-body{padding:18px}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px 16px;position:relative;overflow:hidden;transition:var(--trans);cursor:default}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.kpi-card.c-green::after{background:linear-gradient(90deg,var(--green),var(--green2))}
+.kpi-card.c-red::after{background:linear-gradient(90deg,var(--red),#ff7a86)}
+.kpi-card.c-warn::after{background:linear-gradient(90deg,var(--warn),#fbbf24)}
+.kpi-card.c-blue::after{background:linear-gradient(90deg,var(--blue),#7cb3ff)}
+.kpi-card.c-purple::after{background:linear-gradient(90deg,var(--purple),#a78bfa)}
+.kpi-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:14px}
+.c-green .kpi-icon{background:var(--greenglow);color:var(--green)}
+.c-red .kpi-icon{background:var(--redglow);color:var(--red)}
+.c-warn .kpi-icon{background:var(--warnglow);color:var(--warn)}
+.c-blue .kpi-icon{background:var(--blueglow);color:var(--blue)}
+.c-purple .kpi-icon{background:var(--purpleglow);color:var(--purple)}
+.kpi-label{font-size:9.5px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.kpi-value{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-sub{font-size:12px;color:var(--text3);margin-top:5px}
+.v-green{color:var(--green)!important}.v-red{color:var(--red)!important}.v-warn{color:var(--warn)!important}.v-blue{color:var(--blue)!important}.v-purple{color:var(--purple)!important}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.4px}
+.badge-green{background:var(--greenglow);color:var(--green)}.badge-red{background:var(--redglow);color:var(--red)}.badge-warn{background:var(--warnglow);color:var(--warn)}.badge-blue{background:var(--blueglow);color:var(--blue)}.badge-gray{background:var(--bg4);color:var(--text2)}
+.table-gsg{width:100%;border-collapse:collapse}
+.table-gsg thead th{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+.table-gsg tbody td{padding:11px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);transition:var(--trans)}
+.table-gsg tbody tr:hover td{background:var(--bg3)}
+.table-gsg tbody tr:last-child td{border-bottom:none}
+.date-filter{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:7px 14px}
+.date-filter input[type=date]{background:transparent;border:none;outline:none;color:var(--text);font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500}
+.date-filter input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer}
+body.light .date-filter input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.3)}
+.date-sep{color:var(--text3);font-size:11px}
+.btn-refresh{width:28px;height:28px;border-radius:7px;background:var(--green);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--trans)}
+.btn-refresh:hover{background:var(--green2);transform:rotate(90deg)}
+.btn-period{padding:5px 11px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:var(--trans);font-family:'Inter',sans-serif}
+.btn-period:hover{background:var(--greenglow);color:var(--green);border-color:rgba(16,217,160,.3)}
+.btn-period.active{background:var(--greenglow);color:var(--green);border-color:rgba(16,217,160,.4)}
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.page-header-left h1{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text);line-height:1.2}
+.page-header-left p{font-size:12px;color:var(--text3);margin-top:3px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+footer{padding:14px 28px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:space-between}
+@media(max-width:768px){
+  :root{--sidebar-w:60px}
+  .sb-brand-text,.sb-section-label,.sb-link span,.sb-user-name,.sb-user-role{display:none}
+  .sb-brand{padding:18px 13px;justify-content:center}
+  .sb-link{justify-content:center;padding:10px}
+  .sb-user{justify-content:center}
+  #content{padding:16px}
+}
+</style>
 </head>
-
 <body>
-    <!-- SIDEBAR -->
-    <div id="sidebar">
-        <div class="brand">
-            <div class="brand-icon"><i class="fas fa-chart-network" style="font-size:15px;"></i></div>
-            <div>
-                <div class="brand-text">HUB GERENCIAL</div>
-                <div class="brand-sub">GSG Intelligence</div>
-            </div>
-        </div>
-
-        <div style="overflow-y:auto; flex:1;">
-
-            {% if session.user.nivel == 99 %}
-            <div class="nav-section">
-                <div class="nav-label">Master</div>
-                <ul style="list-style:none">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/portal">
-                            <i class="fas fa-users-cog"></i><span>Governança</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            {% endif %}
-
-            <div class="nav-section">
-                <div class="nav-label">Financeiro</div>
-                <ul style="list-style:none">
-                    {% if 'FIN_CON' in session.user.permissao or session.user.nivel == 99 %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dashboard/visao_geral">
-                            <i class="fas fa-balance-scale"></i><span>Visão Geral</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                    {% if 'FIN_REC' in session.user.permissao or session.user.nivel == 99 %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dashboard/financeiro">
-                            <i class="fas fa-hand-holding-usd"></i><span>Contas a Receber</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                    {% if 'FIN_PAG' in session.user.permissao or session.user.nivel == 99 %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dashboard/pagar">
-                            <i class="fas fa-file-invoice-dollar"></i><span>Contas a Pagar</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-label">Crescimento</div>
-                <ul style="list-style:none">
-                    {% if 'COM' in session.user.permissao or session.user.nivel == 99 %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dashboard/comercial/">
-                            <i class="fas fa-chart-line"></i><span>Performance Vendas</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-label">Operacional</div>
-                <ul style="list-style:none">
-                    {% if 'TEC' in session.user.permissao or session.user.nivel == 99 %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dashboard/tecnico/">
-                            <i class="fas fa-tools"></i><span>Setor Técnico</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-
-        <div class="sidebar-footer">
-            <div class="user-badge">
-                <div class="user-avatar">{{ session.user.nome[0] | upper }}</div>
-                <div>
-                    <div class="user-name">{{ session.user.nome }}</div>
-                    <div class="user-role">{{ session.user.setor }}</div>
-                </div>
-            </div>
-        </div>
+<div id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo"><i class="fas fa-chart-pie"></i></div>
+    <div class="sb-brand-text">
+      <div class="sb-brand-name">HUB GERENCIAL</div>
+      <div class="sb-brand-sub">GSG Intelligence</div>
     </div>
-
-    <!-- MAIN -->
-    <div id="main">
-        <div id="topbar">
-            <div class="topbar-left">
-                <span class="page-title">{% block page_title %}Dashboard{% endblock %}</span>
-            </div>
-            <div class="topbar-right">
-                <span class="topbar-user">
-                    <i class="fas fa-circle" style="font-size:6px;margin-right:5px;color:var(--green);vertical-align:middle;"></i>
-                    {{ session.user.nome }}
-                </span>
-                <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Alternar tema claro/escuro">
-                    <i class="fas fa-moon" id="themeIcon"></i>
-                </button>
-                <a href="/auth/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</a>
-            </div>
-        </div>
-
-        <div id="content">
-            <div class="content-inner">
-                {% block content %}{% endblock %}
-            </div>
-        </div>
-
-        <footer>Hub Gerencial &copy; 2026 — GSG IaTechHub</footer>
+  </div>
+  <div class="sb-body">
+    {% if session.user.nivel == 99 %}
+    <div class="sb-section">
+      <div class="sb-section-label">Master</div>
+      <ul style="list-style:none">
+        <li class="sb-item"><a class="sb-link" href="/portal"><div class="sb-icon"><i class="fas fa-users-cog"></i></div><span>Governança</span></a></li>
+      </ul>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Marca link ativo na sidebar
-        document.querySelectorAll('#sidebar .nav-link').forEach(link => {
-            if (link.getAttribute('href') === window.location.pathname) {
-                link.classList.add('active');
-            }
-        });
-
-        // Dark / Light toggle
-        function toggleTheme() {
-            const isLight = document.body.classList.toggle('light-mode');
-            localStorage.setItem('hub_theme', isLight ? 'light' : 'dark');
-            document.getElementById('themeIcon').className = isLight ? 'fas fa-sun' : 'fas fa-moon';
-        }
-
-        // Restaura tema salvo
-        (function() {
-            const saved = localStorage.getItem('hub_theme');
-            if (saved === 'light') {
-                document.body.classList.add('light-mode');
-                const icon = document.getElementById('themeIcon');
-                if (icon) icon.className = 'fas fa-sun';
-            }
-        })();
-    </script>
-    {% block scripts %}{% endblock %}
+    <div class="sb-separator"></div>
+    {% endif %}
+    <div class="sb-section">
+      <div class="sb-section-label">Financeiro</div>
+      <ul style="list-style:none">
+        {% if 'FIN_CON' in session.user.permissao or session.user.nivel == 99 %}
+        <li class="sb-item"><a class="sb-link" href="/dashboard/visao_geral"><div class="sb-icon"><i class="fas fa-layer-group"></i></div><span>Visão Geral</span></a></li>
+        {% endif %}
+        {% if 'FIN_REC' in session.user.permissao or session.user.nivel == 99 %}
+        <li class="sb-item"><a class="sb-link" href="/dashboard/financeiro"><div class="sb-icon"><i class="fas fa-arrow-trend-up"></i></div><span>Contas a Receber</span></a></li>
+        {% endif %}
+        {% if 'FIN_PAG' in session.user.permissao or session.user.nivel == 99 %}
+        <li class="sb-item"><a class="sb-link" href="/dashboard/pagar"><div class="sb-icon"><i class="fas fa-file-invoice-dollar"></i></div><span>Contas a Pagar</span></a></li>
+        {% endif %}
+      </ul>
+    </div>
+    <div class="sb-separator"></div>
+    <div class="sb-section">
+      <div class="sb-section-label">Crescimento</div>
+      <ul style="list-style:none">
+        {% if 'COM' in session.user.permissao or session.user.nivel == 99 %}
+        <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/"><div class="sb-icon"><i class="fas fa-chart-line"></i></div><span>Performance Vendas</span></a></li>
+        {% endif %}
+      </ul>
+    </div>
+    <div class="sb-separator"></div>
+    <div class="sb-section">
+      <div class="sb-section-label">Operacional</div>
+      <ul style="list-style:none">
+        {% if 'TEC' in session.user.permissao or session.user.nivel == 99 %}
+        <li class="sb-item"><a class="sb-link" href="/dashboard/tecnico/"><div class="sb-icon"><i class="fas fa-tools"></i></div><span>Setor Técnico</span></a></li>
+        {% endif %}
+        {% if 'EST' in session.user.permissao or session.user.nivel == 99 %}
+        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/"><div class="sb-icon"><i class="fas fa-boxes-stacked"></i></div><span>Estoque</span></a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="sb-avatar">{{ session.user.nome[0] | upper }}</div>
+      <div style="min-width:0;flex:1">
+        <div class="sb-user-name">{{ session.user.nome }}</div>
+        <div class="sb-user-role">{{ session.user.setor }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="main">
+  <div id="topbar">
+    <div class="topbar-left">
+      <div class="topbar-breadcrumb">
+        <i class="fas fa-home" style="font-size:11px"></i>
+        <i class="fas fa-chevron-right" style="font-size:9px;color:var(--text3)"></i>
+        <span>{% block page_title %}Dashboard{% endblock %}</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-user-dot">{{ session.user.nome }}</div>
+      <button class="btn-icon" id="btnTheme" onclick="toggleTheme()" title="Alternar tema">
+        <i class="fas fa-moon" id="themeIcon"></i>
+      </button>
+      <a href="/auth/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Sair</a>
+    </div>
+  </div>
+  <div id="content">{% block content %}{% endblock %}</div>
+  <footer><span>Hub Gerencial &copy; 2026 — GSG IaTechHub</span><span style="font-size:10px;color:var(--text3)">v2.0</span></footer>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.querySelectorAll('#sidebar .sb-link').forEach(link=>{
+  if(link.getAttribute('href')===window.location.pathname||
+     window.location.pathname.startsWith(link.getAttribute('href').replace(/\/$/,'')+'/'))
+    link.classList.add('active');
+});
+function toggleTheme(){
+  const l=document.body.classList.toggle('light');
+  localStorage.setItem('gsg_theme',l?'light':'dark');
+  document.getElementById('themeIcon').className=l?'fas fa-sun':'fas fa-moon';
+}
+(function(){
+  if(localStorage.getItem('gsg_theme')==='light'){
+    document.body.classList.add('light');
+    const ic=document.getElementById('themeIcon');
+    if(ic)ic.className='fas fa-sun';
+  }
+})();
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

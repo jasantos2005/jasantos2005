@@ -1,201 +1,102 @@
 {% extends "base/layout.html" %}
-
+{% block page_title %}Governança{% endblock %}
 {% block content %}
 <style>
-    /* Estilo Profissional de Timeline - Dashboard Mastery */
-    .timeline-container {
-        position: relative;
-        padding-left: 20px;
-        border-left: 2px solid #e3e6f0;
-    }
-    .timeline-item {
-        position: relative;
-        margin-bottom: 20px;
-        padding-left: 15px;
-    }
-    .timeline-item::before {
-        content: '';
-        position: absolute;
-        left: -22px;
-        top: 5px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #4e73df;
-        border: 2px solid #fff;
-    }
-    .card-modern {
-        border-radius: 12px;
-        border: none;
-        transition: all 0.3s ease;
-    }
-    .card-modern:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    }
-    .badge-permissao {
-        font-size: 0.7rem;
-        padding: 5px 10px;
-        border-radius: 20px;
-        margin-right: 3px;
-    }
+.btn-action{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;background:var(--green);border:none;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-action:hover{background:var(--green2);transform:translateY(-1px)}
+.btn-sm-icon{width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s}
+.btn-sm-icon:hover{background:var(--warnglow);color:var(--warn);border-color:rgba(245,166,35,.3)}
+.perm-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-right:4px;letter-spacing:.4px}
+.perm-FIN_REC{background:var(--greenglow);color:var(--green)}.perm-FIN_PAG{background:var(--blueglow);color:var(--blue)}.perm-FIN_CON{background:var(--purpleglow);color:var(--purple)}.perm-COM{background:var(--warnglow);color:var(--warn)}.perm-TEC{background:var(--redglow);color:var(--red)}.perm-EST{background:var(--bg4);color:var(--text2)}
+.timeline{padding-left:18px;border-left:1px solid var(--border)}
+.tl-item{position:relative;padding:0 0 16px 18px}
+.tl-item::before{content:'';position:absolute;left:-5px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--bg3);border:2px solid var(--border2)}
+.tl-item.success::before{border-color:var(--green);background:var(--greenglow)}.tl-item.info::before{border-color:var(--blue);background:var(--blueglow)}.tl-item.warning::before{border-color:var(--warn);background:var(--warnglow)}.tl-item.danger::before{border-color:var(--red);background:var(--redglow)}
+.tl-time{font-size:10px;color:var(--text3);margin-bottom:2px}.tl-user{font-size:12.5px;font-weight:600;color:var(--text)}.tl-action{font-size:12px;color:var(--text2)}
+.modal-content{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;color:var(--text)}
+.modal-header{background:var(--bg3);border-bottom:1px solid var(--border);border-radius:14px 14px 0 0;padding:18px 22px}
+.modal-header .modal-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--text)}
+.modal-header .close{color:var(--text2);opacity:1;font-size:18px}
+.modal-body{padding:22px}.modal-footer{border-top:1px solid var(--border);padding:14px 22px;background:var(--bg3);border-radius:0 0 14px 14px}
+.modal-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;letter-spacing:.3px}
+.modal-input{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:all .2s}
+.modal-input:focus{border-color:rgba(16,217,160,.4);box-shadow:0 0 0 3px rgba(16,217,160,.08)}
+.modal-input option{background:var(--bg2)}
+.btn-cancel{padding:8px 18px;border-radius:8px;background:var(--bg4);border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer}
 </style>
-
-<div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800 font-weight-bold">⚙️ Central de Governança</h1>
-        <button class="btn btn-primary btn-sm shadow-sm rounded-pill px-4" data-toggle="modal" data-target="#modalUsuario">
-            <i class="fas fa-user-plus fa-sm text-white-50 mr-2"></i> Novo Usuário
-        </button>
-    </div>
-
-    <div class="row">
-        <div class="col-xl-8 col-lg-7">
-            <div class="card shadow-sm card-modern mb-4">
-                <div class="card-header bg-white py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">👥 Usuários e Permissões</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="border-0">Identificação</th>
-                                    <th class="border-0">Setor</th>
-                                    <th class="border-0">Acessos Ativos</th>
-                                    <th class="border-0 text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for user in usuarios %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-circle mr-3 bg-gray-200 d-flex align-items-center justify-content-center rounded-circle" style="width: 35px; height: 35px;">
-                                                <i class="fas fa-user text-gray-500"></i>
-                                            </div>
-                                            <div>
-                                                <div class="font-weight-bold">{{ user.login }}</div>
-                                                <small class="text-muted">{{ user.nome }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><span class="text-xs">{{ user.setor }}</span></td>
-                                    <td>
-                                        {% if 'FIN_REC' in user.permissao_dash %}
-                                            <span class="badge badge-success badge-permissao">RECEBER</span>
-                                        {% endif %}
-                                        {% if 'FIN_PAG' in user.permissao_dash %}
-                                            <span class="badge badge-primary badge-permissao">PAGAR</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-circle btn-sm btn-outline-warning" onclick="editarUsuario('{{ user.id }}', '{{ user.nome }}', '{{ user.login }}', '{{ user.setor }}', '{{ user.nivel_acesso }}', '{{ user.permissao_dash }}')" title="Editar">
-                                            <i class="fas fa-pen"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-4 col-lg-5">
-            <div class="card shadow-sm card-modern mb-4">
-                <div class="card-header bg-white py-3">
-                    <h6 class="m-0 font-weight-bold text-danger">📜 Auditoria de Acessos</h6>
-                </div>
-                <div class="card-body">
-                    <div class="timeline-container" style="max-height: 500px; overflow-y: auto;">
-                        {% for log in logs %}
-                        <div class="timeline-item">
-                            <div class="text-xs font-weight-bold text-uppercase text-{{ log.tipo }}">{{ log.hora }}</div>
-                            <div class="font-weight-bold text-gray-800">{{ log.user }}</div>
-                            <div class="text-gray-600 small">{{ log.acao }}</div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-users-cog" style="color:var(--green);margin-right:10px;font-size:18px"></i>Central de Governança</h1>
+    <p>Gerenciamento de usuários, permissões e auditoria de acessos</p>
+  </div>
+  <button class="btn-action" data-toggle="modal" data-target="#modalUsuario"><i class="fas fa-user-plus"></i> Novo Usuário</button>
 </div>
-
-<div class="modal fade" id="modalUsuario" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content border-0 shadow-lg">
-            <form action="/admin/usuarios/salvar" method="POST">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title font-weight-bold">Configurar Usuário</h5>
-                    <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="usuario_id" id="edit_id">
-                    <div class="form-group">
-                        <label>Nome Completo</label>
-                        <input type="text" name="nome" id="edit_nome" class="form-control rounded-pill" required>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Login</label>
-                                <input type="text" name="login" id="edit_login" class="form-control rounded-pill" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Senha</label>
-                                <input type="password" name="senha" class="form-control rounded-pill" placeholder="Manter atual">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Setor</label>
-                                <input type="text" name="setor" id="edit_setor" class="form-control rounded-pill">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Nível</label>
-                                <select name="nivel" id="edit_nivel" class="form-control rounded-pill">
-                                    <option value="1">Operacional (Dashboard)</option>
-                                    <option value="99">Administrador (Portal)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Permissões Dashboards (Separe por vírgula)</label>
-                        <input type="text" name="permissao" id="edit_permissao" class="form-control rounded-pill" placeholder="Ex: FIN_REC,FIN_PAG">
-                        <small class="text-muted">Opções: FIN_REC, FIN_PAG</small>
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button class="btn btn-secondary rounded-pill px-4" type="button" data-dismiss="modal">Cancelar</button>
-                    <button class="btn btn-primary rounded-pill px-4" type="submit">Salvar Alterações</button>
-                </div>
-            </form>
-        </div>
+<div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-users" style="margin-right:7px;color:var(--green)"></i>Usuários e Permissões</span>
+      <span class="badge badge-gray">{{ usuarios|length }} usuários</span>
     </div>
+    <div style="overflow-x:auto">
+      <table class="table-gsg">
+        <thead><tr><th>Usuário</th><th>Setor</th><th>Acessos</th><th>Nível</th><th style="text-align:center">Ação</th></tr></thead>
+        <tbody>
+          {% for user in usuarios %}
+          <tr>
+            <td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">{{ user.nome[0]|upper }}</div><div><div style="font-weight:600;font-size:13px">{{ user.nome }}</div><div style="font-size:11px;color:var(--text3)">{{ user.login }}</div></div></div></td>
+            <td style="color:var(--text2)">{{ user.setor }}</td>
+            <td>{% if user.permissao_dash %}{% for p in user.permissao_dash.split(',') %}{% if p.strip() %}<span class="perm-badge perm-{{ p.strip() }}">{{ p.strip() }}</span>{% endif %}{% endfor %}{% else %}<span style="font-size:11px;color:var(--text3)">—</span>{% endif %}</td>
+            <td>{% if user.nivel_acesso == 99 %}<span class="badge badge-green">Admin</span>{% else %}<span class="badge badge-gray">Operacional</span>{% endif %}</td>
+            <td style="text-align:center"><button class="btn-sm-icon" title="Editar" onclick="editarUsuario('{{ user.id }}','{{ user.nome }}','{{ user.login }}','{{ user.setor }}','{{ user.nivel_acesso }}','{{ user.permissao_dash }}')"><i class="fas fa-pen"></i></button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-scroll" style="margin-right:7px;color:var(--warn)"></i>Auditoria de Acessos</span></div>
+    <div class="card-body" style="max-height:480px;overflow-y:auto">
+      <div class="timeline">
+        {% for log in logs %}
+        <div class="tl-item {{ log.tipo }}">
+          <div class="tl-time">{{ log.hora }}</div>
+          <div class="tl-user">{{ log.user }}</div>
+          <div class="tl-action">{{ log.acao }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
 </div>
-
+<div class="modal fade" id="modalUsuario" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form action="/admin/usuarios/salvar" method="POST">
+        <div class="modal-header"><h5 class="modal-title">Configurar Usuário</h5><button class="close" type="button" data-dismiss="modal"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body">
+          <input type="hidden" name="usuario_id" id="edit_id">
+          <div style="margin-bottom:14px"><label class="modal-label">Nome Completo</label><input type="text" name="nome" id="edit_nome" class="modal-input" required></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div><label class="modal-label">Login</label><input type="text" name="login" id="edit_login" class="modal-input" required></div>
+            <div><label class="modal-label">Senha</label><input type="password" name="senha" class="modal-input" placeholder="Manter atual"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div><label class="modal-label">Setor</label><input type="text" name="setor" id="edit_setor" class="modal-input"></div>
+            <div><label class="modal-label">Nível de Acesso</label><select name="nivel" id="edit_nivel" class="modal-input"><option value="1">Operacional</option><option value="99">Administrador</option></select></div>
+          </div>
+          <div><label class="modal-label">Permissões (separadas por vírgula)</label><input type="text" name="permissao" id="edit_permissao" class="modal-input" placeholder="Ex: FIN_REC,FIN_PAG,COM,TEC"><div style="font-size:10.5px;color:var(--text3);margin-top:6px">Opções: FIN_REC, FIN_PAG, FIN_CON, COM, TEC, EST</div></div>
+        </div>
+        <div class="modal-footer"><button class="btn-cancel" type="button" data-dismiss="modal">Cancelar</button><button class="btn-action" type="submit" style="margin-left:8px"><i class="fas fa-floppy-disk"></i> Salvar</button></div>
+      </form>
+    </div>
+  </div>
+</div>
 <script>
-function editarUsuario(id, nome, login, setor, nivel, permissao) {
-    $('#edit_id').val(id);
-    $('#edit_nome').val(nome);
-    $('#edit_login').val(login);
-    $('#edit_setor').val(setor);
-    $('#edit_nivel').val(nivel);
-    $('#edit_permissao').val(permissao);
-    $('#modalUsuario').modal('show');
+function editarUsuario(id,nome,login,setor,nivel,permissao){
+  $('#edit_id').val(id);$('#edit_nome').val(nome);$('#edit_login').val(login);
+  $('#edit_setor').val(setor);$('#edit_nivel').val(nivel);$('#edit_permissao').val(permissao);
+  $('#modalUsuario').modal('show');
 }
 </script>
-
 {% endblock %}

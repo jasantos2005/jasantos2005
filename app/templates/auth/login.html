@@ -1,226 +1,60 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hub Gerencial — GSG</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background: #0d0f12;
-            color: #e8eaf0;
-            font-family: 'DM Sans', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Fundo animado sutil */
-        body::before {
-            content: '';
-            position: fixed;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: radial-gradient(ellipse at 30% 30%, rgba(0,200,160,0.06) 0%, transparent 50%),
-                        radial-gradient(ellipse at 70% 70%, rgba(99,102,241,0.06) 0%, transparent 50%);
-            animation: bgPulse 8s ease-in-out infinite alternate;
-        }
-        @keyframes bgPulse {
-            0%   { transform: scale(1) rotate(0deg); }
-            100% { transform: scale(1.05) rotate(2deg); }
-        }
-
-        .login-wrapper {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 400px;
-            padding: 20px;
-        }
-
-        /* Card de login */
-        .login-card {
-            background: #181c22;
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 20px;
-            padding: 40px 36px 36px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        }
-
-        /* Logo / Header */
-        .login-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-        .login-logo {
-            width: 56px; height: 56px;
-            background: linear-gradient(135deg, #00c8a0, #009e7f);
-            border-radius: 16px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: #fff;
-            margin-bottom: 16px;
-            box-shadow: 0 8px 24px rgba(0,200,160,0.3);
-        }
-        .login-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 800;
-            color: #fff;
-            letter-spacing: 0.5px;
-            line-height: 1.2;
-        }
-        .login-subtitle {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 4px;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        /* Formulário */
-        .form-group {
-            margin-bottom: 14px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 6px;
-        }
-        .input-wrap {
-            position: relative;
-        }
-        .input-wrap i {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #4b5563;
-            font-size: 13px;
-        }
-        .form-control {
-            width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #e8eaf0;
-            padding: 11px 14px 11px 38px;
-            border-radius: 10px;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            outline: none;
-            transition: all 0.2s;
-        }
-        .form-control:focus {
-            border-color: rgba(0,200,160,0.4);
-            background: rgba(0,200,160,0.04);
-            box-shadow: 0 0 0 3px rgba(0,200,160,0.08);
-        }
-        .form-control::placeholder { color: #4b5563; }
-
-        /* Botão */
-        .btn-login {
-            width: 100%;
-            background: linear-gradient(135deg, #00c8a0, #009e7f);
-            color: #fff;
-            border: none;
-            padding: 13px;
-            border-radius: 10px;
-            font-family: 'Syne', sans-serif;
-            font-weight: 700;
-            font-size: 14px;
-            letter-spacing: 1px;
-            cursor: pointer;
-            margin-top: 8px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 16px rgba(0,200,160,0.25);
-        }
-        .btn-login:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(0,200,160,0.35);
-        }
-        .btn-login:active { transform: translateY(0); }
-
-        /* Erro */
-        .error-msg {
-            background: rgba(240,82,82,0.1);
-            border: 1px solid rgba(240,82,82,0.2);
-            color: #f05252;
-            font-size: 13px;
-            padding: 10px 14px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Footer do card */
-        .login-footer {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 11px;
-            color: #374151;
-        }
-        .login-footer span {
-            color: #4b5563;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hub Gerencial — GSG</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080b11;--bg2:#0e1117;--bg3:#13181f;--border:rgba(255,255,255,0.06);--text:#e8ecf2;--text2:#8892a4;--text3:#4f5a6b;--green:#10d9a0;--green2:#06b585;--greenglow:rgba(16,217,160,0.15);--red:#f04f5e}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(16,217,160,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(16,217,160,0.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+body::after{content:'';position:fixed;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(16,217,160,0.06) 0%,transparent 70%);pointer-events:none}
+.wrap{width:100%;max-width:400px;position:relative;z-index:1}
+.brand{text-align:center;margin-bottom:32px}
+.logo{width:52px;height:52px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 0 32px var(--greenglow);margin-bottom:14px}
+.title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text)}
+.subtitle{font-size:12.5px;color:var(--text3);margin-top:4px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;box-shadow:0 24px 64px rgba(0,0,0,0.4)}
+.fg{margin-bottom:18px}
+.lbl{display:block;font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:8px;letter-spacing:.3px}
+.iw{position:relative}
+.inp{width:100%;padding:11px 14px 11px 40px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;outline:none;transition:all .2s}
+.inp:focus{border-color:rgba(16,217,160,.4);box-shadow:0 0 0 3px rgba(16,217,160,.08)}
+.inp::placeholder{color:var(--text3)}
+.ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
+.btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--green),var(--green2));border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.3px;margin-top:6px}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px var(--greenglow)}
+.err{display:flex;align-items:center;gap:8px;background:rgba(240,79,94,.1);border:1px solid rgba(240,79,94,.2);border-radius:8px;padding:10px 14px;color:var(--red);font-size:12.5px;margin-bottom:18px}
+.foot{text-align:center;margin-top:20px;font-size:11px;color:var(--text3)}
+</style>
 </head>
 <body>
-    <div class="login-wrapper">
-        <div class="login-card">
-            <div class="login-header">
-                <div class="login-logo">
-                    <i class="fas fa-chart-network"></i>
-                </div>
-                <div class="login-title">Hub Gerencial</div>
-                <div class="login-subtitle">GSG Intelligence</div>
-            </div>
-
-            {% if error %}
-            <div class="error-msg">
-                <i class="fas fa-exclamation-circle"></i>
-                Usuário ou senha inválidos. Tente novamente.
-            </div>
-            {% endif %}
-
-            <form action="/auth/login" method="POST">
-                <div class="form-group">
-                    <label>Usuário</label>
-                    <div class="input-wrap">
-                        <i class="fas fa-user"></i>
-                        <input type="text" name="username" class="form-control" placeholder="Digite seu login" required autofocus>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Senha</label>
-                    <div class="input-wrap">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" name="password" class="form-control" placeholder="Digite sua senha" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn-login">
-                    <i class="fas fa-sign-in-alt" style="margin-right:8px;"></i> ENTRAR
-                </button>
-            </form>
-
-            <div class="login-footer">
-                <span>&copy; 2026 GSG IaTechHub — Todos os direitos reservados</span>
-            </div>
-        </div>
-    </div>
+<div class="wrap">
+  <div class="brand">
+    <div class="logo"><i class="fas fa-chart-pie"></i></div>
+    <div class="title">Hub Gerencial</div>
+    <div class="subtitle">GSG Intelligence — Acesso Restrito</div>
+  </div>
+  <div class="card">
+    {% if request.query_params.get('error') %}
+    <div class="err"><i class="fas fa-circle-xmark"></i>Login ou senha incorretos. Tente novamente.</div>
+    {% endif %}
+    <form action="/auth/login" method="POST">
+      <div class="fg">
+        <label class="lbl">Usuário</label>
+        <div class="iw"><i class="fas fa-user ic"></i><input type="text" name="username" class="inp" placeholder="seu.login" autocomplete="username" required autofocus></div>
+      </div>
+      <div class="fg">
+        <label class="lbl">Senha</label>
+        <div class="iw"><i class="fas fa-lock ic"></i><input type="password" name="password" class="inp" placeholder="••••••••" autocomplete="current-password" required></div>
+      </div>
+      <button type="submit" class="btn"><i class="fas fa-right-to-bracket" style="margin-right:7px"></i>Entrar</button>
+    </form>
+  </div>
+  <div class="foot">Hub Gerencial &copy; 2026 — GSG IaTechHub</div>
+</div>
 </body>
 </html>

@@ -19,6 +19,7 @@ from app.dashboards.FIN_PAG.router import router as fin_pag_router
 from app.dashboards.FIN_CONSOLIDADO.router import router as fin_cons_router
 from app.dashboards.COMERCIAL.router import router as comercial_router
 from app.dashboards.TECNICO.router import router as tecnico_router
+from app.dashboards.ESTOQUE.router import router as estoque_router
 try:
     from app.admin.router import router as admin_router
 except:
@@ -136,6 +137,7 @@ app.include_router(fin_pag_router, tags=["financeiro_pagar"])
 app.include_router(fin_cons_router, tags=["financeiro_consolidado"])
 app.include_router(comercial_router)
 app.include_router(tecnico_router)
+app.include_router(estoque_router)
 
 if admin_router:
     app.include_router(admin_router)

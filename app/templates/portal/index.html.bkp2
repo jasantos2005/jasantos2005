@@ -1,0 +1,201 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<style>
+    /* Estilo Profissional de Timeline - Dashboard Mastery */
+    .timeline-container {
+        position: relative;
+        padding-left: 20px;
+        border-left: 2px solid #e3e6f0;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+        padding-left: 15px;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4e73df;
+        border: 2px solid #fff;
+    }
+    .card-modern {
+        border-radius: 12px;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .card-modern:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .badge-permissao {
+        font-size: 0.7rem;
+        padding: 5px 10px;
+        border-radius: 20px;
+        margin-right: 3px;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800 font-weight-bold">⚙️ Central de Governança</h1>
+        <button class="btn btn-primary btn-sm shadow-sm rounded-pill px-4" data-toggle="modal" data-target="#modalUsuario">
+            <i class="fas fa-user-plus fa-sm text-white-50 mr-2"></i> Novo Usuário
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow-sm card-modern mb-4">
+                <div class="card-header bg-white py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">👥 Usuários e Permissões</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="border-0">Identificação</th>
+                                    <th class="border-0">Setor</th>
+                                    <th class="border-0">Acessos Ativos</th>
+                                    <th class="border-0 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in usuarios %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle mr-3 bg-gray-200 d-flex align-items-center justify-content-center rounded-circle" style="width: 35px; height: 35px;">
+                                                <i class="fas fa-user text-gray-500"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-weight-bold">{{ user.login }}</div>
+                                                <small class="text-muted">{{ user.nome }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="text-xs">{{ user.setor }}</span></td>
+                                    <td>
+                                        {% if 'FIN_REC' in user.permissao_dash %}
+                                            <span class="badge badge-success badge-permissao">RECEBER</span>
+                                        {% endif %}
+                                        {% if 'FIN_PAG' in user.permissao_dash %}
+                                            <span class="badge badge-primary badge-permissao">PAGAR</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-circle btn-sm btn-outline-warning" onclick="editarUsuario('{{ user.id }}', '{{ user.nome }}', '{{ user.login }}', '{{ user.setor }}', '{{ user.nivel_acesso }}', '{{ user.permissao_dash }}')" title="Editar">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow-sm card-modern mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-danger">📜 Auditoria de Acessos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline-container" style="max-height: 500px; overflow-y: auto;">
+                        {% for log in logs %}
+                        <div class="timeline-item">
+                            <div class="text-xs font-weight-bold text-uppercase text-{{ log.tipo }}">{{ log.hora }}</div>
+                            <div class="font-weight-bold text-gray-800">{{ log.user }}</div>
+                            <div class="text-gray-600 small">{{ log.acao }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUsuario" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="/admin/usuarios/salvar" method="POST">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title font-weight-bold">Configurar Usuário</h5>
+                    <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="usuario_id" id="edit_id">
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" name="nome" id="edit_nome" class="form-control rounded-pill" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Login</label>
+                                <input type="text" name="login" id="edit_login" class="form-control rounded-pill" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Senha</label>
+                                <input type="password" name="senha" class="form-control rounded-pill" placeholder="Manter atual">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Setor</label>
+                                <input type="text" name="setor" id="edit_setor" class="form-control rounded-pill">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nível</label>
+                                <select name="nivel" id="edit_nivel" class="form-control rounded-pill">
+                                    <option value="1">Operacional (Dashboard)</option>
+                                    <option value="99">Administrador (Portal)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Permissões Dashboards (Separe por vírgula)</label>
+                        <input type="text" name="permissao" id="edit_permissao" class="form-control rounded-pill" placeholder="Ex: FIN_REC,FIN_PAG">
+                        <small class="text-muted">Opções: FIN_REC, FIN_PAG</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-secondary rounded-pill px-4" type="button" data-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary rounded-pill px-4" type="submit">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editarUsuario(id, nome, login, setor, nivel, permissao) {
+    $('#edit_id').val(id);
+    $('#edit_nome').val(nome);
+    $('#edit_login').val(login);
+    $('#edit_setor').val(setor);
+    $('#edit_nivel').val(nivel);
+    $('#edit_permissao').val(permissao);
+    $('#modalUsuario').modal('show');
+}
+</script>
+
+{% endblock %}

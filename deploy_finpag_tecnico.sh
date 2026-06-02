@@ -1,0 +1,359 @@
+#!/bin/bash
+BASE="/opt/automacoes/GSG/gestao/diretoria/dashboards/app"
+
+echo "🚀 Atualizando FIN_PAG e TECNICO..."
+
+cp "$BASE/templates/dashboards/FIN_PAG/index.html"   "$BASE/templates/dashboards/FIN_PAG/index.html.bkp2"   2>/dev/null
+cp "$BASE/templates/dashboards/TECNICO/index.html"   "$BASE/templates/dashboards/TECNICO/index.html.bkp2"   2>/dev/null
+
+# ════════════════════════════════════════════════════
+# 1. CONTAS A PAGAR
+# ════════════════════════════════════════════════════
+cat > "$BASE/templates/dashboards/FIN_PAG/index.html" << 'PYEOF'
+{% extends "base/layout.html" %}
+{% block page_title %}Contas a Pagar{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-file-invoice-dollar" style="color:var(--red);margin-right:10px;font-size:18px"></i>Contas a Pagar</h1>
+    <p>Gestão de passivos, vencimentos e projeção de saídas</p>
+  </div>
+  <div class="date-filter">
+    <i class="fas fa-calendar-alt" style="color:var(--text3);font-size:11px"></i>
+    <input type="date" id="data_inicio">
+    <span class="date-sep">até</span>
+    <input type="date" id="data_fim">
+    <button class="btn-refresh" onclick="updateUI()" title="Filtrar">
+      <i class="fas fa-sync-alt" id="icon-refresh"></i>
+    </button>
+  </div>
+</div>
+
+<!-- KPI CARDS -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px">
+
+  <div class="kpi-card c-blue">
+    <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
+    <div class="kpi-label">Passivo Total (Período)</div>
+    <div class="kpi-value v-blue" id="passivo-total">—</div>
+    <div class="kpi-sub">Total de obrigações</div>
+  </div>
+
+  <div class="kpi-card c-red">
+    <div class="kpi-icon"><i class="fas fa-circle-exclamation"></i></div>
+    <div class="kpi-label">Passivo Vencido</div>
+    <div class="kpi-value v-red" id="passivo-vencido">—</div>
+    <div class="kpi-sub">Títulos em atraso</div>
+  </div>
+
+  <div class="kpi-card c-warn">
+    <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+    <div class="kpi-label">Pressão (Próximos 30 Dias)</div>
+    <div class="kpi-value v-warn" id="pressao-30">—</div>
+    <div class="kpi-sub">A vencer em 30 dias</div>
+  </div>
+
+  <div class="kpi-card c-green">
+    <div class="kpi-icon"><i class="fas fa-scale-balanced"></i></div>
+    <div class="kpi-label">Sustentabilidade Financeira</div>
+    <div class="kpi-value v-green" id="sustenta-val">—</div>
+    <div class="kpi-sub">Pagos vs. Abertos no período</div>
+  </div>
+
+</div>
+
+<!-- GRÁFICOS -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-chart-bar" style="margin-right:7px;color:var(--blue)"></i>Projeção de Saídas — Fluxo Futuro</span>
+    </div>
+    <div class="card-body">
+      <div style="height:300px"><canvas id="chartPagarBarras"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-chart-pie" style="margin-right:7px;color:var(--purple)"></i>Top 5 Fornecedores</span>
+    </div>
+    <div class="card-body">
+      <div style="height:300px"><canvas id="chartFornecedores"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+Chart.defaults.color = '#8892a4';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+const fmtBRL = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+let chartObjBarras = null, chartObjRosca = null;
+
+function setLoading(on){
+  document.getElementById('icon-refresh').classList.toggle('fa-spin',on);
+}
+
+async function updateUI(){
+  const inicio = document.getElementById('data_inicio').value;
+  const fim    = document.getElementById('data_fim').value;
+  setLoading(true);
+  try {
+    const res    = await fetch(`/api/financeiro/pagar/resumo?inicio=${inicio}&fim=${fim}`);
+    const result = await res.json();
+    if(result.status === 'success'){
+      const d = result.data;
+      document.getElementById('passivo-total').innerText  = fmtBRL(d.passivo_total.total);
+      document.getElementById('passivo-vencido').innerText = fmtBRL(d.passivo_vencido.total);
+      document.getElementById('pressao-30').innerText     = fmtBRL(d.pressao_30d.total);
+      document.getElementById('sustenta-val').innerText   = `${d.sustentabilidade.total}%`;
+      renderCharts(d);
+    }
+  } catch(e){ console.error(e); }
+  setLoading(false);
+}
+
+function renderCharts(d){
+  const isDark = !document.body.classList.contains('light');
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+
+  // BARRAS
+  const ctxBar = document.getElementById('chartPagarBarras').getContext('2d');
+  if(chartObjBarras) chartObjBarras.destroy();
+  chartObjBarras = new Chart(ctxBar,{
+    type:'bar',
+    data:{
+      labels:['Vencido','Próx. 30 Dias','Próx. 90 Dias'],
+      datasets:[{
+        label:'Volume R$',
+        data:[d.passivo_vencido.total, d.pressao_30d.total, d.projecao_90d.total],
+        backgroundColor:['#f04f5e','#f5a623','#4f8ef7'],
+        borderRadius:8,
+        barThickness:48
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true,grid:{color:gridColor},ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')}},
+        x:{grid:{display:false}}
+      }
+    }
+  });
+
+  // ROSCA
+  const ctxRosca = document.getElementById('chartFornecedores').getContext('2d');
+  if(chartObjRosca) chartObjRosca.destroy();
+  chartObjRosca = new Chart(ctxRosca,{
+    type:'doughnut',
+    data:{
+      labels: d.top_fornecedores.map(i=>i.fornecedor),
+      datasets:[{
+        data: d.top_fornecedores.map(i=>i.total),
+        backgroundColor:['#4f8ef7','#10d9a0','#8b5cf6','#f5a623','#f04f5e'],
+        borderWidth:2,borderColor: isDark ? '#0e1117' : '#ffffff',
+        hoverOffset:12
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:11,padding:14,font:{size:11}}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${fmtBRL(ctx.raw)}`}}
+      }
+    }
+  });
+}
+
+window.onload = () => {
+  const now = new Date();
+  document.getElementById('data_inicio').value = new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
+  document.getElementById('data_fim').value    = now.toISOString().split('T')[0];
+  updateUI();
+};
+</script>
+{% endblock %}
+PYEOF
+echo "  ✅ FIN_PAG/index.html"
+
+# ════════════════════════════════════════════════════
+# 2. SETOR TÉCNICO
+# ════════════════════════════════════════════════════
+cat > "$BASE/templates/dashboards/TECNICO/index.html" << 'PYEOF'
+{% extends "base/layout.html" %}
+{% block page_title %}Setor Técnico{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-screwdriver-wrench" style="color:var(--blue);margin-right:10px;font-size:18px"></i>Gestão Operacional / Técnica</h1>
+    <p>Volume de OS, SLA, produtividade e distribuição de demanda</p>
+  </div>
+  <div class="date-filter">
+    <i class="fas fa-calendar-alt" style="color:var(--text3);font-size:11px"></i>
+    <input type="date" id="data_inicio">
+    <span class="date-sep">até</span>
+    <input type="date" id="data_fim">
+    <button class="btn-refresh" onclick="updateUI()" title="Atualizar">
+      <i class="fas fa-sync-alt" id="icon-refresh"></i>
+    </button>
+  </div>
+</div>
+
+<!-- KPI CARDS -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px">
+
+  <div class="kpi-card c-blue">
+    <div class="kpi-icon"><i class="fas fa-list-check"></i></div>
+    <div class="kpi-label">Volume Total OS</div>
+    <div class="kpi-value v-blue" id="val-total">—</div>
+    <div class="kpi-sub">No período selecionado</div>
+  </div>
+
+  <div class="kpi-card c-green">
+    <div class="kpi-icon"><i class="fas fa-circle-check"></i></div>
+    <div class="kpi-label">SLA Cumprido</div>
+    <div class="kpi-value v-green" id="val-sla">—</div>
+    <div class="kpi-sub">
+      <div style="background:var(--bg4);border-radius:4px;height:4px;margin-top:8px;overflow:hidden">
+        <div id="bar-sla" style="height:4px;background:var(--green);border-radius:4px;width:0%;transition:width .6s ease"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-card c-warn">
+    <div class="kpi-icon"><i class="fas fa-rotate-left"></i></div>
+    <div class="kpi-label">Taxa de Reincidência</div>
+    <div class="kpi-value v-warn" id="val-reincidencia">—</div>
+    <div class="kpi-sub">Assunto 287 — Retrabalho</div>
+  </div>
+
+  <div class="kpi-card c-green">
+    <div class="kpi-icon"><i class="fas fa-network-wired"></i></div>
+    <div class="kpi-label">Instalações FTTH</div>
+    <div class="kpi-value v-green" id="val-inst">—</div>
+    <div class="kpi-sub">Finalizadas — Assunto 311</div>
+  </div>
+
+</div>
+
+<!-- GRÁFICOS -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-chart-bar" style="margin-right:7px;color:var(--blue)"></i>Produtividade — Serviço vs Suporte por Técnico</span>
+    </div>
+    <div class="card-body">
+      <div style="height:320px"><canvas id="chartProdutividade"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-chart-pie" style="margin-right:7px;color:var(--purple)"></i>Distribuição de Demanda</span>
+    </div>
+    <div class="card-body">
+      <div style="height:320px"><canvas id="chartSetores"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+Chart.defaults.color = '#8892a4';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+let chartProd = null, chartSetor = null;
+
+function setLoading(on){
+  document.getElementById('icon-refresh').classList.toggle('fa-spin',on);
+}
+
+async function updateUI(){
+  const inicio = document.getElementById('data_inicio').value;
+  const fim    = document.getElementById('data_fim').value;
+  setLoading(true);
+  try {
+    const res    = await fetch(`/dashboard/tecnico/api/resumo?inicio=${inicio}&fim=${fim}`);
+    const result = await res.json();
+    if(result.status === 'success'){
+      const d = result.data;
+      const r = d.resumo;
+      document.getElementById('val-total').innerText       = r.total_os || 0;
+      document.getElementById('val-sla').innerText         = (r.sla_percentual||0)+'%';
+      document.getElementById('bar-sla').style.width       = (r.sla_percentual||0)+'%';
+      document.getElementById('val-reincidencia').innerText= (r.taxa_reincidencia||0)+'%';
+      document.getElementById('val-inst').innerText        = r.instalacoes_feitas || 0;
+      renderCharts(d);
+    }
+  } catch(e){ console.error(e); }
+  setLoading(false);
+}
+
+function renderCharts(d){
+  const isDark = !document.body.classList.contains('light');
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+
+  // PRODUTIVIDADE
+  const ctxP = document.getElementById('chartProdutividade').getContext('2d');
+  if(chartProd) chartProd.destroy();
+  chartProd = new Chart(ctxP,{
+    type:'bar',
+    data:{
+      labels: d.ranking.map(v=>v.tecnico),
+      datasets:[
+        {label:'Serviço', data:d.ranking.map(v=>v.total_servicos), backgroundColor:'#4f8ef7', borderRadius:4, stack:'s'},
+        {label:'Suporte', data:d.ranking.map(v=>v.total_suportes), backgroundColor:'#10d9a0', borderRadius:4, stack:'s'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{stacked:true,grid:{display:false}},
+        y:{stacked:true,beginAtZero:true,grid:{color:gridColor}}
+      },
+      plugins:{legend:{position:'bottom',labels:{boxWidth:11,padding:14,font:{size:11}}}}
+    }
+  });
+
+  // SETORES
+  const ctxS = document.getElementById('chartSetores').getContext('2d');
+  if(chartSetor) chartSetor.destroy();
+  chartSetor = new Chart(ctxS,{
+    type:'doughnut',
+    data:{
+      labels: d.setores.map(s=>s.setor_nome),
+      datasets:[{
+        data: d.setores.map(s=>s.total),
+        backgroundColor:['#4f8ef7','#10d9a0','#8b5cf6','#f5a623','#f04f5e'],
+        borderWidth:2, borderColor: isDark ? '#0e1117' : '#ffffff',
+        hoverOffset:12
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{legend:{position:'bottom',labels:{boxWidth:11,padding:14,font:{size:11}}}}
+    }
+  });
+}
+
+window.onload = () => {
+  const now = new Date();
+  document.getElementById('data_inicio').value = new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
+  document.getElementById('data_fim').value    = now.toISOString().split('T')[0];
+  updateUI();
+};
+</script>
+{% endblock %}
+PYEOF
+echo "  ✅ TECNICO/index.html"
+
+echo ""
+echo "✅ DEPLOY CONCLUÍDO"

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub Gerencial — GSG</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0d0f12;
+            color: #e8eaf0;
+            font-family: 'DM Sans', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Fundo animado sutil */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 30% 30%, rgba(0,200,160,0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 70%, rgba(99,102,241,0.06) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+        @keyframes bgPulse {
+            0%   { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.05) rotate(2deg); }
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+        }
+
+        /* Card de login */
+        .login-card {
+            background: #181c22;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 20px;
+            padding: 40px 36px 36px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        /* Logo / Header */
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-logo {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, #00c8a0, #009e7f);
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(0,200,160,0.3);
+        }
+        .login-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+        .login-subtitle {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Formulário */
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+        .input-wrap {
+            position: relative;
+        }
+        .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4b5563;
+            font-size: 13px;
+        }
+        .form-control {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #e8eaf0;
+            padding: 11px 14px 11px 38px;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .form-control:focus {
+            border-color: rgba(0,200,160,0.4);
+            background: rgba(0,200,160,0.04);
+            box-shadow: 0 0 0 3px rgba(0,200,160,0.08);
+        }
+        .form-control::placeholder { color: #4b5563; }
+
+        /* Botão */
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, #00c8a0, #009e7f);
+            color: #fff;
+            border: none;
+            padding: 13px;
+            border-radius: 10px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 16px rgba(0,200,160,0.25);
+        }
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0,200,160,0.35);
+        }
+        .btn-login:active { transform: translateY(0); }
+
+        /* Erro */
+        .error-msg {
+            background: rgba(240,82,82,0.1);
+            border: 1px solid rgba(240,82,82,0.2);
+            color: #f05252;
+            font-size: 13px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Footer do card */
+        .login-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 11px;
+            color: #374151;
+        }
+        .login-footer span {
+            color: #4b5563;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">
+                    <i class="fas fa-chart-network"></i>
+                </div>
+                <div class="login-title">Hub Gerencial</div>
+                <div class="login-subtitle">GSG Intelligence</div>
+            </div>
+
+            {% if error %}
+            <div class="error-msg">
+                <i class="fas fa-exclamation-circle"></i>
+                Usuário ou senha inválidos. Tente novamente.
+            </div>
+            {% endif %}
+
+            <form action="/auth/login" method="POST">
+                <div class="form-group">
+                    <label>Usuário</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="username" class="form-control" placeholder="Digite seu login" required autofocus>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" class="form-control" placeholder="Digite sua senha" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt" style="margin-right:8px;"></i> ENTRAR
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <span>&copy; 2026 GSG IaTechHub — Todos os direitos reservados</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,90 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Estoque — Produtos CASA{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="section-title">🏠 Estoque CASA</div>
+        <div class="section-sub">Produtos de instalação doméstica · {{ dias_periodo }} dias · {{ data_ini_value }} a {{ data_fim_value }}</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <form method="get" style="display:flex;align-items:center;gap:8px;">
+            <div class="date-filter">
+                <i class="fas fa-calendar-alt" style="color:var(--muted);font-size:12px;"></i>
+                <input type="date" name="de"  value="{{ data_ini_value }}">
+                <span class="date-sep">—</span>
+                <input type="date" name="ate" value="{{ data_fim_value }}">
+            </div>
+            <button type="submit" class="btn-refresh"><i class="fas fa-sync-alt"></i></button>
+        </form>
+        <a href="/dashboard/estoque/export/casa?de={{ data_ini_value }}&ate={{ data_fim_value }}"
+           style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(0,200,160,0.1);border:1px solid rgba(0,200,160,0.3);color:var(--green);font-size:12px;font-weight:600;text-decoration:none;">
+            <i class="fas fa-download"></i> CSV
+        </a>
+        <a href="/dashboard/estoque/" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--muted);font-size:12px;text-decoration:none;">
+            ← Voltar
+        </a>
+    </div>
+</div>
+
+<!-- LEGENDA STATUS -->
+<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <span class="badge-red">🚨 Crítico &lt;7 dias</span>
+    <span style="background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;">⚠️ Alerta 7–20 dias</span>
+    <span class="badge-green">✅ OK &gt;20 dias</span>
+    <span class="badge-blue">— Sem movimento</span>
+</div>
+
+<div class="card">
+    <div class="card-body" style="padding:0;">
+        <table class="table-axiom">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Produto</th>
+                    <th style="text-align:right;">Saldo atual</th>
+                    <th style="text-align:right;">Saídas período</th>
+                    <th style="text-align:right;">Entradas período</th>
+                    <th style="text-align:right;">Consumo/dia</th>
+                    <th style="text-align:center;">Dias cobertura</th>
+                    <th style="text-align:center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itens %}
+                <tr>
+                    <td style="color:var(--muted);font-size:11px;">{{ item.id }}</td>
+                    <td><strong>{{ item.descricao }}</strong></td>
+                    <td style="text-align:right;font-weight:600;">{{ "%.0f"|format(item.estoque_atual) }}</td>
+                    <td style="text-align:right;">{{ "%.0f"|format(item.saidas_periodo) }}</td>
+                    <td style="text-align:right;color:var(--green);">{{ "%.0f"|format(item.entradas_periodo) }}</td>
+                    <td style="text-align:right;">
+                        {% if item.consumo_dia > 0 %}{{ "%.1f"|format(item.consumo_dia) }}/dia{% else %}—{% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if item.dias_cobertura == 9999 %}
+                            <span style="color:var(--muted);">—</span>
+                        {% else %}
+                            {{ item.dias_cobertura }}d
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if item.status == 'critico' %}
+                            <span class="badge-red">🚨 Crítico</span>
+                        {% elif item.status == 'alerta' %}
+                            <span style="background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;">⚠️ Alerta</span>
+                        {% elif item.status == 'ok' %}
+                            <span class="badge-green">✅ OK</span>
+                        {% else %}
+                            <span class="badge-blue">— Sem mov.</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">Nenhum produto encontrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

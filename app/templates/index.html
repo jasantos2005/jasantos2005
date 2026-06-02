@@ -1,211 +1,78 @@
 {% extends "base/layout.html" %}
-{% block page_title %}<i class="fas fa-tachometer-alt" style="color:var(--green);margin-right:8px;font-size:14px"></i>Visão de Recebimento{% endblock %}
-
+{% block page_title %}Visão Executiva{% endblock %}
 {% block content %}
-
-<!-- HEADER + FILTRO -->
-<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
-    <div>
-        <div class="section-title">Performance de Recebimento</div>
-        <div class="section-sub">Visão geral da saúde financeira e fluxo de caixa</div>
-    </div>
-    <div class="date-filter">
-        <i class="fas fa-calendar-alt" style="color:var(--muted); font-size:12px;"></i>
-        <input type="date" id="date-start">
-        <span class="date-sep">até</span>
-        <input type="date" id="date-end">
-        <button class="btn-refresh" onclick="updateUI()" title="Atualizar">
-            <i class="fas fa-sync-alt" id="icon-refresh"></i>
-        </button>
-    </div>
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-chart-pie" style="color:var(--green);margin-right:10px;font-size:18px"></i>Performance de Recebimento</h1>
+    <p>Visão geral da saúde financeira e fluxo de caixa</p>
+  </div>
+  <div class="date-filter">
+    <i class="fas fa-calendar-alt" style="color:var(--text3);font-size:11px"></i>
+    <input type="date" id="date-start">
+    <span class="date-sep">até</span>
+    <input type="date" id="date-end">
+    <button class="btn-refresh" onclick="updateUI()" title="Atualizar"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
+  </div>
 </div>
-
-<!-- KPI GRID -->
-<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:24px;">
-
-    <div class="kpi-card green">
-        <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
-        <div class="kpi-label">Pagamento no Prazo</div>
-        <div class="kpi-value kpi-green" id="prazo-perc">—</div>
-        <div class="kpi-sub" id="prazo-val">R$ 0,00 recebido</div>
-    </div>
-
-    <div class="kpi-card blue">
-        <div class="kpi-icon" style="background:rgba(59,130,246,0.12);color:var(--blue);"><i class="fas fa-redo-alt"></i></div>
-        <div class="kpi-label">Recuperação (Mês Ant.)</div>
-        <div class="kpi-value" style="color:var(--blue);" id="rec-perc">—</div>
-        <div class="kpi-sub" id="rec-val">R$ 0,00</div>
-    </div>
-
-    <div class="kpi-card accent">
-        <div class="kpi-icon"><i class="fas fa-users"></i></div>
-        <div class="kpi-label">ARPU Real / Cliente</div>
-        <div class="kpi-value kpi-accent" id="arpu-val">—</div>
-        <div class="kpi-sub" id="arpu-cli">0 clientes pagantes</div>
-    </div>
-
-    <div class="kpi-card red">
-        <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
-        <div class="kpi-label">Inadimplência Mês</div>
-        <div class="kpi-value kpi-red" id="inad-mes-perc">—</div>
-        <div class="kpi-sub" id="inad-mes-val">R$ 0,00 em aberto</div>
-    </div>
-
-    <div class="kpi-card warn">
-        <div class="kpi-icon"><i class="fas fa-calendar-times"></i></div>
-        <div class="kpi-label">Inadimplência Anual</div>
-        <div class="kpi-value kpi-warn" id="inad-ano-perc">—</div>
-        <div class="kpi-sub" id="inad-ano-val">R$ 0,00 acumulado</div>
-    </div>
-
-    <div class="kpi-card info">
-        <div class="kpi-icon"><i class="fas fa-shield-alt"></i></div>
-        <div class="kpi-label">Exposição de Risco</div>
-        <div class="kpi-value kpi-info" id="exp-mes-val">—</div>
-        <div class="kpi-sub" id="exp-mes-qtd">0 títulos vencidos</div>
-    </div>
-
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Pagamento no Prazo</div><div class="kpi-value v-green" id="prazo-perc">—</div><div class="kpi-sub" id="prazo-val">carregando...</div></div>
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-rotate"></i></div><div class="kpi-label">Recuperação Mês Ant.</div><div class="kpi-value v-blue" id="rec-perc">—</div><div class="kpi-sub" id="rec-val">carregando...</div></div>
+  <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-label">ARPU Real / Cliente</div><div class="kpi-value v-purple" id="arpu-val">—</div><div class="kpi-sub" id="arpu-cli">0 clientes pagantes</div></div>
+  <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="kpi-label">Inadimplência Mês</div><div class="kpi-value v-red" id="inad-mes-perc">—</div><div class="kpi-sub" id="inad-mes-val">carregando...</div></div>
+  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-calendar-xmark"></i></div><div class="kpi-label">Inadimplência Anual</div><div class="kpi-value v-warn" id="inad-ano-perc">—</div><div class="kpi-sub" id="inad-ano-val">carregando...</div></div>
+  <div class="kpi-card c-red" style="border-color:rgba(240,79,94,.25)"><div class="kpi-icon" style="background:rgba(240,79,94,.18)"><i class="fas fa-shield-halved"></i></div><div class="kpi-label">Exposição de Risco</div><div class="kpi-value v-red" id="exp-val">—</div><div class="kpi-sub" id="exp-qtd">0 títulos vencidos</div></div>
 </div>
-
-<!-- ATALHOS DE NAVEGAÇÃO -->
-<div style="margin-bottom:8px;">
-    <div class="section-title" style="font-size:14px; margin-bottom:12px;">Acessos Rápidos</div>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px;">
-
-        {% if 'FIN_REC' in session.user.permissao or session.user.nivel == 99 %}
-        <a href="/dashboard/financeiro" style="text-decoration:none;">
-            <div class="card" style="padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.2s;"
-                 onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
-                <div style="width:40px;height:40px;background:rgba(0,200,160,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:17px;">
-                    <i class="fas fa-hand-holding-usd"></i>
-                </div>
-                <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--text);">Contas a Receber</div>
-                    <div style="font-size:11px;color:var(--muted);">Inadimplência & KPIs</div>
-                </div>
-            </div>
-        </a>
-        {% endif %}
-
-        {% if 'FIN_PAG' in session.user.permissao or session.user.nivel == 99 %}
-        <a href="/dashboard/pagar" style="text-decoration:none;">
-            <div class="card" style="padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.2s;"
-                 onmouseover="this.style.borderColor='var(--info)'" onmouseout="this.style.borderColor='var(--border)'">
-                <div style="width:40px;height:40px;background:rgba(96,165,250,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--info);font-size:17px;">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                </div>
-                <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--text);">Contas a Pagar</div>
-                    <div style="font-size:11px;color:var(--muted);">Obrigações & Vencimentos</div>
-                </div>
-            </div>
-        </a>
-        {% endif %}
-
-        {% if 'FIN_CON' in session.user.permissao or session.user.nivel == 99 %}
-        <a href="/dashboard/visao_geral" style="text-decoration:none;">
-            <div class="card" style="padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.2s;"
-                 onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
-                <div style="width:40px;height:40px;background:rgba(99,102,241,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent2);font-size:17px;">
-                    <i class="fas fa-balance-scale"></i>
-                </div>
-                <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--text);">Visão Geral</div>
-                    <div style="font-size:11px;color:var(--muted);">Consolidado Financeiro</div>
-                </div>
-            </div>
-        </a>
-        {% endif %}
-
-        {% if 'COM' in session.user.permissao or session.user.nivel == 99 %}
-        <a href="/dashboard/comercial/" style="text-decoration:none;">
-            <div class="card" style="padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.2s;"
-                 onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='var(--border)'">
-                <div style="width:40px;height:40px;background:rgba(245,158,11,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--warn);font-size:17px;">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--text);">Performance Vendas</div>
-                    <div style="font-size:11px;color:var(--muted);">Comercial & Metas</div>
-                </div>
-            </div>
-        </a>
-        {% endif %}
-
-        {% if 'TEC' in session.user.permissao or session.user.nivel == 99 %}
-        <a href="/dashboard/tecnico/" style="text-decoration:none;">
-            <div class="card" style="padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.2s;"
-                 onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='var(--border)'">
-                <div style="width:40px;height:40px;background:rgba(240,82,82,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--danger);font-size:17px;">
-                    <i class="fas fa-tools"></i>
-                </div>
-                <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--text);">Setor Técnico</div>
-                    <div style="font-size:11px;color:var(--muted);">OS & Produtividade</div>
-                </div>
-            </div>
-        </a>
-        {% endif %}
-
-    </div>
+<div style="margin-bottom:8px">
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:14px">Acessos Rápidos</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px">
+    {% if 'FIN_REC' in session.user.permissao or session.user.nivel == 99 %}
+    <a href="/dashboard/financeiro" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--greenglow);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:15px;flex-shrink:0"><i class="fas fa-arrow-trend-up"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Contas a Receber</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Inadimplência & KPIs</div></div></div></a>
+    {% endif %}
+    {% if 'FIN_PAG' in session.user.permissao or session.user.nivel == 99 %}
+    <a href="/dashboard/pagar" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--blueglow);display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:15px;flex-shrink:0"><i class="fas fa-file-invoice-dollar"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Contas a Pagar</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Obrigações & Vencimentos</div></div></div></a>
+    {% endif %}
+    {% if 'FIN_CON' in session.user.permissao or session.user.nivel == 99 %}
+    <a href="/dashboard/visao_geral" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--purpleglow);display:flex;align-items:center;justify-content:center;color:var(--purple);font-size:15px;flex-shrink:0"><i class="fas fa-layer-group"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Visão Geral</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Consolidado Financeiro</div></div></div></a>
+    {% endif %}
+    {% if 'COM' in session.user.permissao or session.user.nivel == 99 %}
+    <a href="/dashboard/comercial/" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--warnglow);display:flex;align-items:center;justify-content:center;color:var(--warn);font-size:15px;flex-shrink:0"><i class="fas fa-chart-line"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Performance Vendas</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Comercial & Metas</div></div></div></a>
+    {% endif %}
+    {% if 'TEC' in session.user.permissao or session.user.nivel == 99 %}
+    <a href="/dashboard/tecnico/" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--redglow);display:flex;align-items:center;justify-content:center;color:var(--red);font-size:15px;flex-shrink:0"><i class="fas fa-screwdriver-wrench"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Setor Técnico</div><div style="font-size:11px;color:var(--text3);margin-top:1px">OS & Produtividade</div></div></div></a>
+    {% endif %}
+    {% if 'EST' in session.user.permissao or session.user.nivel == 99 %}
+    <a href="/dashboard/estoque/" style="text-decoration:none"><div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:13px;transition:all .2s;cursor:pointer" onmouseover="this.style.borderColor='var(--text2)'" onmouseout="this.style.borderColor='var(--border)'"><div style="width:38px;height:38px;border-radius:9px;background:var(--bg4);display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:15px;flex-shrink:0"><i class="fas fa-boxes-stacked"></i></div><div><div style="font-weight:600;font-size:13px;color:var(--text)">Estoque</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Inventário & Controle</div></div></div></a>
+    {% endif %}
+  </div>
 </div>
-
 <script>
-    const fmt = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
-
-    function setLoading(on) {
-        const icon = document.getElementById('icon-refresh');
-        if (on) icon.classList.add('fa-spin');
-        else icon.classList.remove('fa-spin');
+const fmt=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+const fmtP=v=>`${parseFloat(v||0).toFixed(2)}%`;
+function setLoading(on){document.getElementById('icon-refresh').classList.toggle('fa-spin',on)}
+async function updateUI(){
+  const start=document.getElementById('date-start').value;
+  const end=document.getElementById('date-end').value;
+  setLoading(true);
+  try{
+    const res=await fetch(`/api/financeiro/resumo?inicio=${start}&fim=${end}`);
+    const r=await res.json();
+    if(r.status==='success'){
+      const d=r.data;
+      if(d.pagamento_prazo){document.getElementById('prazo-perc').innerText=fmtP(d.pagamento_prazo.percentual_no_prazo);document.getElementById('prazo-val').innerText=fmt(d.pagamento_prazo.total_pago_no_prazo)+' recebido';}
+      if(d.recuperacao_mes_ant){document.getElementById('rec-perc').innerText=fmtP(d.recuperacao_mes_ant.taxa_recuperacao);document.getElementById('rec-val').innerText=fmt(d.recuperacao_mes_ant.total_recuperado);}
+      if(d.arpu_caixa){document.getElementById('arpu-val').innerText=fmt(d.arpu_caixa.arpu_real);document.getElementById('arpu-cli').innerText=`${d.arpu_caixa.clientes_pagantes||0} clientes pagantes`;}
+      if(d.inadimplencia_mes){document.getElementById('inad-mes-perc').innerText=fmtP(d.inadimplencia_mes.percentual_inadimplencia);document.getElementById('inad-mes-val').innerText=fmt(d.inadimplencia_mes.total_ainda_em_aberto)+' em aberto';}
+      if(d.inadimplencia_ano){document.getElementById('inad-ano-perc').innerText=fmtP(d.inadimplencia_ano.percentual_inadimplencia_ano);document.getElementById('inad-ano-val').innerText=fmt(d.inadimplencia_ano.total_em_aberto_no_ano)+' acumulado';}
+      if(d.exposicao_mes){document.getElementById('exp-val').innerText=fmt(d.exposicao_mes.total_exposto);document.getElementById('exp-qtd').innerText=`${d.exposicao_mes.qtd_titulos_vencidos||0} títulos vencidos`;}
     }
-
-    async function updateUI() {
-        const start = document.getElementById('date-start').value;
-        const end   = document.getElementById('date-end').value;
-        setLoading(true);
-        try {
-            const res = await fetch(`/api/financeiro/resumo?inicio=${start}&fim=${end}`);
-            const result = await res.json();
-            if (result.status === 'success') {
-                const d = result.data;
-
-                if (d.pagamento_prazo) {
-                    document.getElementById('prazo-perc').innerText = `${d.pagamento_prazo.percentual_no_prazo || 0}%`;
-                    document.getElementById('prazo-val').innerText = fmt(d.pagamento_prazo.total_pago_no_prazo) + ' recebido';
-                }
-                if (d.recuperacao_mes_ant) {
-                    document.getElementById('rec-perc').innerText = `${d.recuperacao_mes_ant.taxa_recuperacao || 0}%`;
-                    document.getElementById('rec-val').innerText = fmt(d.recuperacao_mes_ant.total_recuperado);
-                }
-                if (d.arpu_caixa) {
-                    document.getElementById('arpu-val').innerText = fmt(d.arpu_caixa.arpu_real);
-                    document.getElementById('arpu-cli').innerText = `${d.arpu_caixa.clientes_pagantes || 0} clientes pagantes`;
-                }
-                if (d.inadimplencia_mes) {
-                    document.getElementById('inad-mes-perc').innerText = `${d.inadimplencia_mes.percentual_inadimplencia || 0}%`;
-                    document.getElementById('inad-mes-val').innerText = fmt(d.inadimplencia_mes.total_ainda_em_aberto) + ' em aberto';
-                }
-                if (d.inadimplencia_ano) {
-                    document.getElementById('inad-ano-perc').innerText = `${d.inadimplencia_ano.percentual_inadimplencia_ano || 0}%`;
-                    document.getElementById('inad-ano-val').innerText = fmt(d.inadimplencia_ano.total_em_aberto_no_ano) + ' acumulado';
-                }
-                if (d.exposicao_mes) {
-                    document.getElementById('exp-mes-val').innerText = fmt(d.exposicao_mes.total_exposto);
-                    document.getElementById('exp-mes-qtd').innerText = `${d.exposicao_mes.qtd_titulos_vencidos || 0} títulos vencidos`;
-                }
-            }
-        } catch(e) { console.error(e); }
-        setLoading(false);
-    }
-
-    window.onload = () => {
-        const now = new Date();
-        const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-        const today = now.toISOString().split('T')[0];
-        document.getElementById('date-start').value = first;
-        document.getElementById('date-end').value   = today;
-        updateUI();
-    };
+  }catch(e){console.error(e);}
+  setLoading(false);
+}
+window.onload=()=>{
+  const now=new Date();
+  document.getElementById('date-start').value=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
+  document.getElementById('date-end').value=now.toISOString().split('T')[0];
+  updateUI();
+};
 </script>
-
 {% endblock %}

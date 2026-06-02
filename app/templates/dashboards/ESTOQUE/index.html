@@ -1,0 +1,174 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Estoque — Dashboard{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div>
+        <div class="section-title">📦 Controle de Estoque</div>
+        <div class="section-sub">Visão geral · período {{ data_ini_value }} a {{ data_fim_value }}</div>
+    </div>
+    <form method="get" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="date-filter">
+            <i class="fas fa-calendar-alt" style="color:var(--muted);font-size:12px;"></i>
+            <input type="date" name="de"  value="{{ data_ini_value }}">
+            <span class="date-sep">—</span>
+            <input type="date" name="ate" value="{{ data_fim_value }}">
+        </div>
+        <button type="submit" class="btn-refresh"><i class="fas fa-sync-alt"></i></button>
+    </form>
+</div>
+
+<!-- KPIs -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;">
+    <div class="kpi-card green">
+        <div class="kpi-icon"><i class="fas fa-home"></i></div>
+        <div class="kpi-label">Cobertura CASA</div>
+        <div class="kpi-value">{{ resumo.cobertura_casa }}<span style="font-size:14px;font-weight:400;margin-left:3px;">dias</span></div>
+        <div class="kpi-sub">{{ resumo.total_casa }} produtos monitorados</div>
+    </div>
+    <div class="kpi-card info">
+        <div class="kpi-icon"><i class="fas fa-network-wired"></i></div>
+        <div class="kpi-label">Cobertura INFRA</div>
+        <div class="kpi-value">{{ resumo.cobertura_infra }}<span style="font-size:14px;font-weight:400;margin-left:3px;">dias</span></div>
+        <div class="kpi-sub">{{ resumo.total_infra }} produtos monitorados</div>
+    </div>
+    <div class="kpi-card red">
+        <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="kpi-label">Itens Críticos</div>
+        <div class="kpi-value">{{ resumo.criticos | length }}</div>
+        <div class="kpi-sub">Cobertura &lt; 7 dias</div>
+    </div>
+    <div class="kpi-card warn">
+        <div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div>
+        <div class="kpi-label">Itens em Alerta</div>
+        <div class="kpi-value">{{ resumo.alertas | length }}</div>
+        <div class="kpi-sub">Cobertura entre 7–20 dias</div>
+    </div>
+</div>
+
+<!-- GRÁFICOS -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🏠 Top Consumo CASA</span>
+            <a href="/dashboard/estoque/casa?de={{ data_ini_value }}&ate={{ data_fim_value }}" style="font-size:11px;color:var(--green);text-decoration:none;">Ver tudo →</a>
+        </div>
+        <div class="card-body">
+            <canvas id="chartCasa" height="160"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🔧 Top Consumo INFRA</span>
+            <a href="/dashboard/estoque/infra?de={{ data_ini_value }}&ate={{ data_fim_value }}" style="font-size:11px;color:var(--green);text-decoration:none;">Ver tudo →</a>
+        </div>
+        <div class="card-body">
+            <canvas id="chartInfra" height="160"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ITENS CRÍTICOS -->
+{% if resumo.criticos %}
+<div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+        <span class="card-title">🚨 Itens Críticos — Cobertura &lt; 7 dias</span>
+        <span class="badge-red">{{ resumo.criticos | length }} itens</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <table class="table-axiom">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Saldo</th>
+                    <th>Consumo/dia</th>
+                    <th>Dias restantes</th>
+                    <th>Saídas período</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in resumo.criticos %}
+                <tr>
+                    <td><strong>[{{ item.id }}]</strong> {{ item.descricao }}</td>
+                    <td>{{ "%.0f"|format(item.estoque_atual) }}</td>
+                    <td>{{ "%.1f"|format(item.consumo_dia) }}/dia</td>
+                    <td><span class="badge-red">{{ item.dias_cobertura }} dias</span></td>
+                    <td>{{ "%.0f"|format(item.saidas_periodo) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ITENS EM ALERTA -->
+{% if resumo.alertas %}
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">⚠️ Itens em Alerta — Cobertura 7–20 dias</span>
+        <span style="background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;">{{ resumo.alertas | length }} itens</span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <table class="table-axiom">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Saldo</th>
+                    <th>Consumo/dia</th>
+                    <th>Dias restantes</th>
+                    <th>Saídas período</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in resumo.alertas %}
+                <tr>
+                    <td><strong>[{{ item.id }}]</strong> {{ item.descricao }}</td>
+                    <td>{{ "%.0f"|format(item.estoque_atual) }}</td>
+                    <td>{{ "%.1f"|format(item.consumo_dia) }}/dia</td>
+                    <td><span style="background:rgba(245,158,11,0.12);color:var(--warn);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;">{{ item.dias_cobertura }} dias</span></td>
+                    <td>{{ "%.0f"|format(item.saidas_periodo) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const casaLabels  = {{ resumo.chart_casa_labels  | tojson }};
+const casaValues  = {{ resumo.chart_casa_values  | tojson }};
+const infraLabels = {{ resumo.chart_infra_labels | tojson }};
+const infraValues = {{ resumo.chart_infra_values | tojson }};
+
+function buildBar(id, labels, data, color) {
+    const ctx = document.getElementById(id).getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: color + '99',
+                borderColor: color,
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { display: false } },
+                y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+            }
+        }
+    });
+}
+buildBar('chartCasa',  casaLabels,  casaValues,  '#00c8a0');
+buildBar('chartInfra', infraLabels, infraValues, '#3b82f6');
+</script>
+{% endblock %}
