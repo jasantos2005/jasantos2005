@@ -585,3 +585,77 @@ async def api_entradas_nf(request: Request, de: str = "", ate: str = ""):
     except Exception as e:
         log.error(f"entradas_nf: {e}")
         return {"entradas": [], "erro": str(e)}
+
+# ── CRUZAMENTO ESTOQUE × OS ABERTAS ──────────────────────────
+@router.get("/api/estoque/hub/cruzamento-os")
+async def api_cruzamento_os(request: Request):
+    u = request.session.get("user")
+    if not u: return {"erro": "não autenticado"}
+    try:
+        from app.core.ixc_db_gsg import ixc_select_one, ixc_select
+        # OS de instalação abertas
+        r = ixc_select_one("""
+            SELECT COUNT(*) as total
+            FROM ixcprovedor.su_oss_chamado
+            WHERE id_assunto = 311 AND status = 'A'
+        """)
+        total_os = int(r["total"] or 0) if r else 0
+
+        # Produtos CASA com consumo histórico
+        conn = db()
+        rows = conn.execute("""
+            SELECT p.id_produto, p.descricao, p.unidade,
+                   COALESCE(s.saldo, 0) as saldo,
+                   COALESCE(m.total_saida, 0) as saida_90d
+            FROM produtos p
+            LEFT JOIN saldos s ON s.id_produto = p.id_produto
+            LEFT JOIN consumo_por_ativacao m ON m.id_produto = p.id_produto
+            WHERE p.categoria = 'CASA' AND p.ativo = 1
+              AND COALESCE(m.total_saida, 0) > 0
+            ORDER BY p.descricao
+        """).fetchall()
+        conn.close()
+
+        # Calcular por OS usando média histórica
+        from app.core.ixc_db_gsg import ixc_select as _ixc_sel
+        # Total de instalações nos últimos 90 dias para calcular consumo/OS
+        r2 = ixc_select_one("""
+            SELECT COUNT(*) as total
+            FROM ixcprovedor.su_oss_chamado
+            WHERE id_assunto = 311
+              AND status = 'F'
+              AND data_fechamento >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+        """)
+        os_90d = max(int(r2["total"] or 1) if r2 else 1, 1)
+
+        resultado = []
+        alertas = 0
+        for r in rows:
+            saldo   = float(r["saldo"])
+            saida   = float(r["saida_90d"])
+            media_por_os = round(saida / os_90d, 2)
+            necessario   = round(media_por_os * total_os, 2)
+            suficiente   = saldo >= necessario
+            if not suficiente and necessario > 0:
+                alertas += 1
+            resultado.append({
+                "id_produto":    r["id_produto"],
+                "descricao":     r["descricao"],
+                "unidade":       r["unidade"] or "un",
+                "saldo":         round(saldo, 2),
+                "saida_90d":     round(saida, 2),
+                "media_por_os":  media_por_os,
+                "necessario":    necessario,
+                "suficiente":    suficiente,
+                "deficit":       round(max(0, necessario - saldo), 2),
+            })
+
+        return {
+            "total_os_abertas": total_os,
+            "os_90d_finalizadas": os_90d,
+            "alertas": alertas,
+            "produtos": sorted(resultado, key=lambda x: x["suficiente"])
+        }
+    except Exception as e:
+        log.error(f"cruzamento_os: {e}")
+        return {"total_os_abertas": 0, "alertas": 0, "produtos": [], "erro": str(e)}

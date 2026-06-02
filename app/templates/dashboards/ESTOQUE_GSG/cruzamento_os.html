@@ -1,0 +1,55 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Estoque × OS Abertas{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-code-branch" style="color:var(--purple);margin-right:10px;font-size:18px"></i>Estoque × OS Abertas</h1>
+    <p>Verifica se o estoque suporta as instalações pendentes</p>
+  </div>
+  <button class="btn-refresh" onclick="loadCruzamento()"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-clipboard-list"></i></div><div class="kpi-label">OS Instalação Abertas</div><div class="kpi-value v-blue" id="k-os">—</div></div>
+  <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="kpi-label">Produtos Insuficientes</div><div class="kpi-value v-red" id="k-alertas">—</div></div>
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-circle-check"></i></div><div class="kpi-label">Produtos Suficientes</div><div class="kpi-value v-green" id="k-ok">—</div></div>
+  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-history"></i></div><div class="kpi-label">Instalações (90 dias)</div><div class="kpi-value v-warn" id="k-hist">—</div></div>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-list" style="margin-right:7px;color:var(--purple)"></i>Análise por Produto</span></div>
+  <div style="overflow-x:auto"><table class="table-gsg">
+    <thead><tr><th>Produto</th><th>Unid.</th><th style="text-align:right">Saldo Atual</th><th style="text-align:right">Uso/OS</th><th style="text-align:right">Necessário</th><th style="text-align:right">Déficit</th><th>Status</th></tr></thead>
+    <tbody id="tbody-cruz"></tbody>
+  </table></div>
+</div>
+<script>
+async function loadCruzamento() {
+  document.getElementById('icon-refresh').classList.add('fa-spin');
+  const res  = await fetch('/api/estoque/hub/cruzamento-os');
+  const data = await res.json();
+  const prods = data.produtos || [];
+  const ok = prods.filter(p => p.suficiente).length;
+  document.getElementById('k-os').innerText     = data.total_os_abertas || 0;
+  document.getElementById('k-alertas').innerText = data.alertas || 0;
+  document.getElementById('k-ok').innerText      = ok;
+  document.getElementById('k-hist').innerText    = data.os_90d_finalizadas || 0;
+  document.getElementById('tbody-cruz').innerHTML = prods.map(p => `
+    <tr>
+      <td style="font-size:12px;font-weight:500">${p.descricao}</td>
+      <td style="color:var(--text3)">${p.unidade}</td>
+      <td style="text-align:right;font-weight:600">${parseFloat(p.saldo).toFixed(2)}</td>
+      <td style="text-align:right;color:var(--text2)">${parseFloat(p.media_por_os).toFixed(2)}</td>
+      <td style="text-align:right;color:var(--blue)">${parseFloat(p.necessario).toFixed(2)}</td>
+      <td style="text-align:right;color:${p.deficit>0?'var(--red)':'var(--green)'};font-weight:700">
+        ${p.deficit > 0 ? '-'+parseFloat(p.deficit).toFixed(2) : '✓'}
+      </td>
+      <td><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;
+        color:${p.suficiente?'var(--green)':'var(--red)'};
+        background:${p.suficiente?'var(--greenglow)':'var(--redglow)'}">
+        ${p.suficiente ? 'OK' : 'INSUFICIENTE'}
+      </span></td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">Nenhum produto com histórico encontrado</td></tr>';
+  document.getElementById('icon-refresh').classList.remove('fa-spin');
+}
+window.onload = loadCruzamento;
+</script>
+{% endblock %}
