@@ -66,7 +66,7 @@ async def acao_autenticar(request: Request, username: str = Form(...), password:
             "permissao": user_data["permissao_dash"] or ""
         }
         admin_service.registrar_acao(user_data["nome"], "Realizou login no sistema", "success")
-        return RedirectResponse(url="/dashboard/home", status_code=303) if int(user_data["nivel_acesso"]) != 99 else RedirectResponse(url="/portal", status_code=303)
+        return RedirectResponse(url="/dashboard/home", status_code=303)
     return RedirectResponse(url="/?error=1", status_code=303)
 
 @app.get("/auth/logout")

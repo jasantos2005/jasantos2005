@@ -1,0 +1,66 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Estoque INFRA{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-network-wired" style="color:var(--blue);margin-right:10px;font-size:18px"></i>Estoque INFRA</h1>
+    <p>Produtos de infraestrutura — fibra, CTO, CEO, poste, duto, rack</p>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button class="btn-period active" onclick="setFiltro('',this)">Todos</button>
+    <button class="btn-period" onclick="setFiltro('critico',this)">Crítico</button>
+    <button class="btn-period" onclick="setFiltro('alerta',this)">Alerta</button>
+    <button class="btn-period" onclick="setFiltro('normal',this)">Normal</button>
+    <input type="text" id="busca" placeholder="Buscar..." style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);font-size:12px;outline:none;width:180px" oninput="filtrar()">
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+  <div class="kpi-card c-blue"><div class="kpi-label">Total Itens</div><div class="kpi-value v-blue" id="k-total">—</div></div>
+  <div class="kpi-card c-red"><div class="kpi-label">Críticos</div><div class="kpi-value v-red" id="k-crit">—</div></div>
+  <div class="kpi-card c-warn"><div class="kpi-label">Alerta</div><div class="kpi-value v-warn" id="k-alert">—</div></div>
+  <div class="kpi-card c-blue"><div class="kpi-label">Cobertura Média</div><div class="kpi-value v-blue" id="k-cob">—</div></div>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-list" style="margin-right:7px;color:var(--blue)"></i>Produtos INFRA</span><span class="badge badge-gray" id="badge-count">0 itens</span></div>
+  <div style="overflow-x:auto"><table class="table-gsg">
+    <thead><tr><th>ID</th><th>Descrição</th><th>Unid.</th><th style="text-align:right">Saldo</th><th style="text-align:right">Saída 90d</th><th style="text-align:right">Cons./Dia</th><th style="text-align:right">Cobertura</th><th>Status</th></tr></thead>
+    <tbody id="tbody-infra"></tbody>
+  </table></div>
+</div>
+<script>
+const STATUS_COR={'critico':'var(--red)','alerta':'var(--warn)','normal':'var(--green)','zerado':'var(--text3)'};
+const STATUS_LABEL={'critico':'CRÍTICO','alerta':'ALERTA','normal':'NORMAL','zerado':'ZERADO'};
+let todos=[],filtroAtual='';
+function setFiltro(f,btn){filtroAtual=f;document.querySelectorAll('.btn-period').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filtrar();}
+function filtrar(){
+  const q=document.getElementById('busca').value.toLowerCase();
+  let lista=todos;
+  if(filtroAtual) lista=lista.filter(i=>i.status===filtroAtual);
+  if(q) lista=lista.filter(i=>i.descricao.toLowerCase().includes(q));
+  document.getElementById('badge-count').innerText=lista.length+' itens';
+  document.getElementById('tbody-infra').innerHTML=lista.map(i=>`
+    <tr>
+      <td style="color:var(--text3);font-size:11px">${i.id_produto}</td>
+      <td style="font-size:12px;font-weight:500">${i.descricao}</td>
+      <td style="color:var(--text3)">${i.unidade}</td>
+      <td style="text-align:right;font-weight:600;color:${i.saldo>0?'var(--text)':'var(--red)'}">${parseFloat(i.saldo).toFixed(2)}</td>
+      <td style="text-align:right;color:var(--text2)">${parseFloat(i.saida_periodo).toFixed(0)}</td>
+      <td style="text-align:right;color:var(--text2)">${parseFloat(i.consumo_dia).toFixed(2)}</td>
+      <td style="text-align:right;font-weight:700;color:${STATUS_COR[i.status]}">${i.dias_cobertura<999?i.dias_cobertura+'d':'∞'}</td>
+      <td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;color:${STATUS_COR[i.status]};background:${STATUS_COR[i.status]}22">${STATUS_LABEL[i.status]}</span></td>
+    </tr>`).join('');
+}
+async function loadInfra(){
+  const res=await fetch('/api/estoque/hub/infra');
+  const data=await res.json();
+  todos=data.itens||[];
+  document.getElementById('k-total').innerText=todos.length;
+  document.getElementById('k-crit').innerText=todos.filter(i=>i.status==='critico').length;
+  document.getElementById('k-alert').innerText=todos.filter(i=>i.status==='alerta').length;
+  const dias=todos.filter(i=>i.dias_cobertura<999).map(i=>i.dias_cobertura);
+  document.getElementById('k-cob').innerText=dias.length?Math.round(dias.reduce((a,b)=>a+b,0)/dias.length)+'d':'—';
+  filtrar();
+}
+window.onload=loadInfra;
+</script>
+{% endblock %}

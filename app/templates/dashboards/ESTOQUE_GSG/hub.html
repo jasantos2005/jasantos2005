@@ -1,0 +1,104 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Hub Estoque{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-warehouse" style="color:var(--blue);margin-right:10px;font-size:18px"></i>Hub Estoque — Dashboard</h1>
+    <p>Visão geral do almoxarifado principal — saldos, alertas e pedidos</p>
+  </div>
+  <button class="btn-refresh" id="btn-sync" onclick="syncEstoque()" title="Sincronizar com IXC">
+    <i class="fas fa-sync-alt" id="icon-sync"></i>
+  </button>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-boxes-stacked"></i></div><div class="kpi-label">Total Produtos</div><div class="kpi-value v-blue" id="k-total">—</div></div>
+  <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-home"></i></div><div class="kpi-label">Cobertura CASA</div><div class="kpi-value v-green" id="k-cob-casa">—</div><div class="kpi-sub">dias médios</div></div>
+  <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-network-wired"></i></div><div class="kpi-label">Cobertura INFRA</div><div class="kpi-value v-blue" id="k-cob-infra">—</div><div class="kpi-sub">dias médios</div></div>
+  <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-triangle-exclamation"></i></div><div class="kpi-label">Críticos</div><div class="kpi-value v-red" id="k-criticos">—</div><div class="kpi-sub">menos de 10 dias</div></div>
+  <div class="kpi-card c-warn"><div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div><div class="kpi-label">Em Alerta</div><div class="kpi-value v-warn" id="k-alerta">—</div><div class="kpi-sub">10 a 20 dias</div></div>
+  <div class="kpi-card c-purple"><div class="kpi-icon"><i class="fas fa-shopping-cart"></i></div><div class="kpi-label">Pedidos Pendentes</div><div class="kpi-value v-purple" id="k-pedidos">—</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-triangle-exclamation" style="color:var(--red);margin-right:7px"></i>Produtos Críticos — menos de 10 dias</span></div>
+    <div style="overflow-x:auto;max-height:300px">
+      <table class="table-gsg"><thead><tr><th>Produto</th><th>Cat</th><th style="text-align:right">Saldo</th><th style="text-align:right">Dias</th></tr></thead>
+      <tbody id="tb-criticos"></tbody></table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-fire" style="color:var(--warn);margin-right:7px"></i>Top 10 Maior Consumo (90d)</span></div>
+    <div style="overflow-x:auto;max-height:300px">
+      <table class="table-gsg"><thead><tr><th>Produto</th><th style="text-align:right">Saída 90d</th><th style="text-align:right">Dias</th></tr></thead>
+      <tbody id="tb-top"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-home" style="color:var(--green);margin-right:7px"></i>Distribuição CASA</span></div>
+    <div class="card-body" style="height:200px"><canvas id="chart-casa"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-network-wired" style="color:var(--blue);margin-right:7px"></i>Distribuição INFRA</span></div>
+    <div class="card-body" style="height:200px"><canvas id="chart-infra"></canvas></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+Chart.defaults.color='#8892a4';Chart.defaults.borderColor='rgba(255,255,255,0.06)';
+let chartCasa=null,chartInfra=null;
+const fmt=v=>parseFloat(v||0).toFixed(0);
+
+async function loadDash(){
+  const res=await fetch('/api/estoque/hub/dashboard');
+  const data=await res.json();
+  const r=data.resumo||{};
+  document.getElementById('k-total').innerText=r.total_produtos||0;
+  document.getElementById('k-cob-casa').innerText=(r.cobertura_casa||0)+'d';
+  document.getElementById('k-cob-infra').innerText=(r.cobertura_infra||0)+'d';
+  document.getElementById('k-criticos').innerText=(r.itens_criticos||[]).length;
+  document.getElementById('k-alerta').innerText=(r.itens_alerta||[]).length;
+  document.getElementById('k-pedidos').innerText=r.pedidos_pendentes||0;
+
+  document.getElementById('tb-criticos').innerHTML=(r.itens_criticos||[]).map(i=>`
+    <tr><td style="font-size:12px">${i.descricao}</td>
+    <td><span style="font-size:10px;padding:2px 6px;border-radius:3px;background:var(--bg4);color:var(--text3)">${i.categoria}</span></td>
+    <td style="text-align:right;color:var(--green)">${fmt(i.saldo)} ${i.unidade}</td>
+    <td style="text-align:right;color:var(--red);font-weight:700">${i.dias_cobertura}d</td></tr>`).join('');
+
+  document.getElementById('tb-top').innerHTML=(r.top_consumo||[]).map(i=>`
+    <tr><td style="font-size:12px">${i.descricao}</td>
+    <td style="text-align:right;color:var(--warn)">${fmt(i.saida_periodo)}</td>
+    <td style="text-align:right;color:${i.dias_cobertura<10?'var(--red)':i.dias_cobertura<20?'var(--warn)':'var(--green)'}">${i.dias_cobertura<999?i.dias_cobertura+'d':'∞'}</td></tr>`).join('');
+
+  const dc=r.dist_casa||{};const di=r.dist_infra||{};
+  const isDark=!document.body.classList.contains('light');
+  const bdr=isDark?'#0e1117':'#ffffff';
+  function makeChart(id,dist,colors){
+    const cv=document.getElementById(id).getContext('2d');
+    const ch=Chart.getChart(id);if(ch)ch.destroy();
+    return new Chart(cv,{type:'doughnut',data:{labels:['Normal','Alerta','Crítico','Zerado'],
+      datasets:[{data:[dist.normal||0,dist.alerta||0,dist.critico||0,dist.zerado||0],
+      backgroundColor:colors,borderWidth:2,borderColor:bdr,hoverOffset:8}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+        plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}}}});
+  }
+  chartCasa=makeChart('chart-casa',dc,['#10d9a0','#f5a623','#f04f5e','#4f5a6b']);
+  chartInfra=makeChart('chart-infra',di,['#4f8ef7','#f5a623','#f04f5e','#4f5a6b']);
+}
+
+async function syncEstoque(){
+  document.getElementById('icon-sync').classList.add('fa-spin');
+  const r=await fetch('/api/estoque/hub/sync',{method:'POST'});
+  const d=await r.json();
+  document.getElementById('icon-sync').classList.remove('fa-spin');
+  if(d.ok){loadDash();}else{alert('Erro: '+(d.erro||'desconhecido'));}
+}
+window.onload=loadDash;
+</script>
+{% endblock %}

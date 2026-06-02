@@ -167,32 +167,26 @@ footer{padding:14px 28px;border-top:1px solid var(--border);font-size:11px;color
         {% endif %}
       </ul>
     </div>
-    
     <div class="sb-separator"></div>
     <div class="sb-section">
       <div class="sb-section-label">Comercial</div>
       <ul style="list-style:none">
-        {% if 'COM' in session.user.permissao or session.user.nivel == 99 %}
         <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/ranking"><div class="sb-icon"><i class="fas fa-trophy"></i></div><span>Ranking Vendedores</span></a></li>
         <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/metas"><div class="sb-icon"><i class="fas fa-bullseye"></i></div><span>Metas</span></a></li>
         <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/painel-tv"><div class="sb-icon"><i class="fas fa-tv"></i></div><span>Painel TV</span></a></li>
         <li class="sb-item"><a class="sb-link" href="/dashboard/comercial/inadimplentes"><div class="sb-icon"><i class="fas fa-user-slash"></i></div><span>Inadimplentes</span></a></li>
-        {% endif %}
       </ul>
     </div>
-
     <div class="sb-separator"></div>
     <div class="sb-section">
       <div class="sb-section-label">Estoque</div>
       <ul style="list-style:none">
-        {% if 'EST_ADM' in session.user.permissao or 'EST_VIS' in session.user.permissao or session.user.nivel == 99 %}
-        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/principal"><div class="sb-icon"><i class="fas fa-warehouse"></i></div><span>Estoque Principal</span></a></li>
-        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/tecnicos"><div class="sb-icon"><i class="fas fa-hard-hat"></i></div><span>Estoque Técnicos</span></a></li>
-        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/requisicoes"><div class="sb-icon"><i class="fas fa-clipboard-list"></i></div><span>Requisições</span></a></li>
-        {% endif %}
-        {% if 'EST_ADM' in session.user.permissao or session.user.nivel == 99 %}
-        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/auditoria"><div class="sb-icon"><i class="fas fa-search"></i></div><span>Auditoria IXC</span></a></li>
-        {% endif %}
+        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/hub"><div class="sb-icon"><i class="fas fa-warehouse"></i></div><span>Dashboard</span></a></li>
+        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/casa"><div class="sb-icon"><i class="fas fa-home"></i></div><span>Estoque CASA</span></a></li>
+        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/infra"><div class="sb-icon"><i class="fas fa-network-wired"></i></div><span>Estoque INFRA</span></a></li>
+        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/movimentacoes"><div class="sb-icon"><i class="fas fa-arrows-up-down"></i></div><span>Movimentações</span></a></li>
+        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/compras"><div class="sb-icon"><i class="fas fa-shopping-cart"></i></div><span>Compras</span></a></li>
+        <li class="sb-item"><a class="sb-link" href="/dashboard/estoque/projecao"><div class="sb-icon"><i class="fas fa-chart-line"></i></div><span>Projeção</span></a></li>
       </ul>
     </div>
 

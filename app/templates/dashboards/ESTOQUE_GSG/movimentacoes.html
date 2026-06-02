@@ -1,0 +1,53 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Movimentações{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-arrows-up-down" style="color:var(--blue);margin-right:10px;font-size:18px"></i>Movimentações</h1>
+    <p>Histórico de entradas e saídas do almoxarifado</p>
+  </div>
+  <div class="date-filter">
+    <i class="fas fa-calendar-alt" style="color:var(--text3);font-size:11px"></i>
+    <input type="date" id="date-start">
+    <span class="date-sep">até</span>
+    <input type="date" id="date-end">
+    <button class="btn-refresh" onclick="loadMovs()"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-list" style="margin-right:7px"></i>Histórico</span><span class="badge badge-gray" id="badge-count">— registros</span></div>
+  <div style="overflow-x:auto"><table class="table-gsg">
+    <thead><tr><th>Data</th><th>Produto</th><th>Categoria</th><th>Tipo</th><th style="text-align:right">Quantidade</th><th>Responsável</th><th>Obs</th></tr></thead>
+    <tbody id="tbody-movs"></tbody>
+  </table></div>
+</div>
+<script>
+const TIPO_COR={'entrada':'var(--green)','saida':'var(--red)','ajuste':'var(--blue)'};
+async function loadMovs(){
+  document.getElementById('icon-refresh').classList.add('fa-spin');
+  const de=document.getElementById('date-start').value;
+  const ate=document.getElementById('date-end').value;
+  const res=await fetch(`/api/estoque/hub/movimentacoes?de=${de}&ate=${ate}`);
+  const data=await res.json();
+  const movs=data.movimentacoes||[];
+  document.getElementById('badge-count').innerText=movs.length+' registros';
+  document.getElementById('tbody-movs').innerHTML=movs.map(m=>`
+    <tr>
+      <td style="color:var(--text3);font-size:12px">${(m.data||'').substring(0,16)}</td>
+      <td style="font-size:12px;font-weight:500">${m.descricao||m.id_produto}</td>
+      <td><span style="font-size:10px;padding:2px 6px;border-radius:3px;background:var(--bg4);color:var(--text3)">${m.categoria||'—'}</span></td>
+      <td><span style="color:${TIPO_COR[m.tipo]||'var(--text)'};font-size:11px;font-weight:700">${(m.tipo||'').toUpperCase()}</span></td>
+      <td style="text-align:right;font-weight:600;color:${TIPO_COR[m.tipo]||'var(--text)'}">${parseFloat(m.quantidade||0).toFixed(2)}</td>
+      <td style="color:var(--text2);font-size:12px">${m.responsavel||'—'}</td>
+      <td style="color:var(--text3);font-size:11px">${m.obs||''}</td>
+    </tr>`).join('');
+  document.getElementById('icon-refresh').classList.remove('fa-spin');
+}
+window.onload=()=>{
+  const now=new Date();
+  document.getElementById('date-start').value=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
+  document.getElementById('date-end').value=now.toISOString().split('T')[0];
+  loadMovs();
+};
+</script>
+{% endblock %}

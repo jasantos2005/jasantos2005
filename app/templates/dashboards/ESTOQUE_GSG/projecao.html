@@ -1,0 +1,45 @@
+{% extends "base/layout.html" %}
+{% block page_title %}Projeção de Estoque{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1><i class="fas fa-chart-line" style="color:var(--purple);margin-right:10px;font-size:18px"></i>Projeção de Estoque</h1>
+    <p>Quantas instalações o estoque atual suporta</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <label style="font-size:12px;color:var(--text2)">Ativações:</label>
+    <input type="number" id="inp-ativ" value="100" min="1" max="9999" style="width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;outline:none">
+    <button class="btn-refresh" onclick="loadProjecao()"><i class="fas fa-sync-alt" id="icon-refresh"></i></button>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-calculator" style="margin-right:7px;color:var(--purple)"></i>Necessidade por produto</span><span class="badge badge-gray" id="badge-count">— itens</span></div>
+  <div style="overflow-x:auto"><table class="table-gsg">
+    <thead><tr><th>Produto</th><th>Cat</th><th>Unid.</th><th style="text-align:right">Saldo Atual</th><th style="text-align:right">Necessário</th><th style="text-align:right">A Comprar</th><th style="text-align:right">Cobertura</th></tr></thead>
+    <tbody id="tbody-proj"></tbody>
+  </table></div>
+</div>
+<script>
+async function loadProjecao(){
+  document.getElementById('icon-refresh').classList.add('fa-spin');
+  const ativ=document.getElementById('inp-ativ').value||100;
+  const res=await fetch(`/api/estoque/hub/projecao?ativacoes=${ativ}`);
+  const data=await res.json();
+  const itens=data.itens||[];
+  document.getElementById('badge-count').innerText=itens.length+' itens';
+  document.getElementById('tbody-proj').innerHTML=itens.map(i=>{
+    const cor=i.a_comprar>0?'var(--red)':'var(--green)';
+    return`<tr>
+      <td style="font-size:12px;font-weight:500">${i.descricao}</td>
+      <td><span style="font-size:10px;padding:2px 6px;border-radius:3px;background:var(--bg4);color:var(--text3)">${i.categoria}</span></td>
+      <td style="color:var(--text3)">${i.unidade}</td>
+      <td style="text-align:right">${parseFloat(i.saldo).toFixed(2)}</td>
+      <td style="text-align:right;color:var(--blue)">${parseFloat(i.necessario).toFixed(2)}</td>
+      <td style="text-align:right;font-weight:700;color:${cor}">${parseFloat(i.a_comprar).toFixed(2)}</td>
+      <td style="text-align:right;color:${i.dias_cobertura<10?'var(--red)':i.dias_cobertura<20?'var(--warn)':'var(--green)'}">${i.dias_cobertura<999?i.dias_cobertura+'d':'∞'}</td>
+    </tr>`;}).join('');
+  document.getElementById('icon-refresh').classList.remove('fa-spin');
+}
+window.onload=loadProjecao;
+</script>
+{% endblock %}
